@@ -8,6 +8,10 @@ from .bandit import BanditTwoArmedDeterministicFixed
 from .bandit import BanditTwoArmedHighHighFixed
 from .bandit import BanditTwoArmedHighLowFixed
 from .bandit import BanditTwoArmedLowLowFixed
+from .anonymous_delayed_bandit import AnonymousDelayedBanditTwoArmedDeterministic
+from .anonymous_delayed_bandit import AnonymousDelayedBanditTwoArmedStochasticDelay
+from .anonymous_delayed_bandit import AnonymousDelayedBanditTwoArmStochasticReward
+from .anonymous_delayed_bandit import AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward
 
 environments = [['BanditTenArmedRandomFixed', 'v0'],
                 ['BanditTenArmedRandomRandom', 'v0'],
@@ -16,7 +20,11 @@ environments = [['BanditTenArmedRandomFixed', 'v0'],
                 ['BanditTwoArmedDeterministicFixed', 'v0'],
                 ['BanditTwoArmedHighHighFixed', 'v0'],
                 ['BanditTwoArmedHighLowFixed', 'v0'],
-                ['BanditTwoArmedLowLowFixed', 'v0']]
+                ['BanditTwoArmedLowLowFixed', 'v0'],
+                ['AnonymousDelayedBanditTwoArmedDeterministic', 'v0'],
+                ['AnonymousDelayedBanditTwoArmStochasticReward', 'v0'],
+                ['AnonymousDelayedBanditTwoArmedStochasticDelay', 'v0'],
+                ['AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward', 'v0']]
 
 for environment in environments:
     register(

@@ -2,6 +2,8 @@ import numpy as np
 import gym
 from gym import spaces
 from gym.utils import seeding
+from types import FunctionType
+import functools
 
 
 class AnonymousDelayedBanditEnv(gym.Env):
@@ -9,25 +11,26 @@ class AnonymousDelayedBanditEnv(gym.Env):
     Bandit environment base to allow agents to interact with the class n-armed bandit
     in different variations - This environment returns accumulated rewards at stochastic
     timesteps with respect to the d_dist.  The source of the rewards are not known, only
-    the sum of the rewards.  However, everytime a reward is received, it is a complete
-    payout (i.e. no rewards will be left in the system immediately after a payout)
+    the sum of the rewards to be received at each time step.
 
     p_dist:
-        A list of probabilities of the likelihood that a particular bandit will pay out
+        A list of distributions for the arms to pay out at (a list of numbers corresponding to the percentage chance
+        of payout per arm)
     r_dist:
-        A list of either rewards (if number) or means and standard deviations (if list)
-        of the payout that bandit has
+        A list of distributions for the rewards that the arms distribute (a list of numbers corresponds to a set
+        return value, whereas a list of funcions corresponds to distributions to be sampled from to get reward)
+    d_dist:
+        A list of distributions to which the delays of each arm are sampled (a list of numbers corresponds to
+        deterministic delays, whereas a list of functions corresponds to distributions for the delays to be sampled
+        from.  Note that this should numbers or a distribution bounded by [0, horizon]
     """
-    def __init__(self, p_dist, r_dist, d_dist=None, horizon=1000):
+    def __init__(self, p_dist, r_dist, d_dist, horizon=1000):
         if len(p_dist) != len(r_dist):
             raise ValueError("Probability and Reward distribution must be the same length")
 
-        if min(p_dist) < 0 or max(p_dist) > 1:
-            raise ValueError("All probabilities must be between 0 and 1")
-
-        for reward in r_dist:
-            if isinstance(reward, list) and reward[1] <= 0:
-                raise ValueError("Standard deviation in rewards must all be greater than 0")
+        self.types = { "p_dist" : float,
+                       "r_dist" : float,
+                       "d_dist" : float}
 
         self.p_dist = p_dist
         self.r_dist = r_dist
@@ -38,7 +41,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
         self.done = False
 
         self.horizon = horizon
-        self.reward = [ 0 for i in range(horizon)]
+        self.reward = [0 for i in range(self.horizon)]
         self.history = {'arm': [],
                         'reward': [],
                         'delay': [],
@@ -48,82 +51,114 @@ class AnonymousDelayedBanditEnv(gym.Env):
         self.action_space = spaces.Discrete(self.n_bandits)
         self.observation_space = spaces.Discrete(1)
 
-        self._seed()
+        self.seed()
 
-    def _seed(self, seed=None):
+        # determine if the p_dist, r_dist, or d_dist are lists of numbers or lists of functions: (assume no mixing)
+        if callable(p_dist[0]):
+            # then we are dealing with functions
+            self.types["p_dist"] = FunctionType
+        if callable(r_dist[0]):
+            self.types["r_dist"] = FunctionType
+        if callable(d_dist[0]):
+            self.types["d_dist"] = FunctionType
+
+    def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _step(self, action):
-        assert self.action_space.contains(action)
+    def step(self, arm):
+        assert self.action_space.contains(arm)
 
         reward_from_this_pull = 0
         delay_this_pull = None
 
-        # This looks like it is either a uniform or a normal ??
-        if np.random.uniform() < self.p_dist[action]:
-            if not isinstance(self.r_dist[action], list):
-                reward_from_this_pull = self.r_dist[action]
-                delay_this_pull = int(self.d_dist[action]) - 1
-                self.reward[delay_this_pull] += reward_from_this_pull
-            else:
-                reward_from_this_pull = np.random.normal(self.r_dist[action][0], self.r_dist[action][1])
-                delay_this_pull = int(self.d_dist[action]) - 1
-                self.reward[delay_this_pull] += reward_from_this_pull
+        arm_did_payout = True if np.random.uniform(0, 1, 1)[0] < self.p_dist[arm] else False
 
+        if arm_did_payout:
+            # If the arm payed out, what was the reward?
+            if self.types["r_dist"] == FunctionType:  # TODO: verify but I think this one is good
+                reward_from_this_pull = self.r_dist[arm]()
+            else:
+                reward_from_this_pull = self.r_dist[arm]
+
+            if type(reward_from_this_pull) is np.ndarray:
+                reward_from_this_pull = reward_from_this_pull[0]
+
+            # and what delay is associated with that reward?
+            if self.types["d_dist"] == FunctionType:
+                delay_this_pull = self.d_dist[arm]()
+            else:
+                delay_this_pull = self.d_dist[arm]
+
+        # ensure that delay is non-negative int (it is an index)
+        delay_this_pull = int(delay_this_pull if delay_this_pull >= 0 else 0)
+
+        # add the reward to the corresponding location in self.reward
+        self.reward[delay_this_pull] += reward_from_this_pull
+
+        # TODO: THis is probably inefficient for large horizons - should rethink
         reward_this_timestep = self.reward[0]
         del self.reward[0]
         self.reward.insert(len(self.reward), 0)
 
-        self.history['arm'].append(action)
+        self.history['arm'].append(arm)
         self.history['reward'].append(reward_from_this_pull)
-        # print("reward this pull: ", reward_from_this_pull)
         self.history['delay'].append(delay_this_pull)
-        # print("Delay this pull", delay_this_pull)
         self.history['received'].append(reward_this_timestep)
 
         self.time_step += 1
 
-        if self.time_step > 9999:
+        if self.time_step > self.horizon:
             self.done = True
 
-        return self.time_step, reward_this_timestep, self.done, {}
+        return self.time_step, reward_this_timestep, self.done, self.history
 
-    def _reset(self):
+    def reset(self):
         self.time_step = 0
+        self.history = {'arm': [],
+                        'reward': [],
+                        'delay': [],
+                        'received': []}
+        self.reward = [0 for i in range(self.horizon)]
         return 0
 
-    def _render(self, mode='human', close=False):
+    def render(self, mode='human', close=False):
         pass
 
-    def get_history(self):
-        return self.history.copy()
 
-    def normalize_delay(self, delay):
-        # not sure for now, so just mult by 10 and round?
-        return np.random.choice(delay)
-
-
-class AnonymousDelayedBanditTwoArmedDeterministicFixed(AnonymousDelayedBanditEnv):
+class AnonymousDelayedBanditTwoArmedDeterministic(AnonymousDelayedBanditEnv):
     """Simplest case where one bandit always pays, and the other always doesn't"""
     def __init__(self):
-        AnonymousDelayedBanditEnv.__init__(self, p_dist=[1, 0], r_dist=[1, 1], d_dist=[1, 1])
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=[1, 1], r_dist=[3, 2], d_dist=[2, 0])
 
 
-class AnonymousDelayedBanditTenArmedRandomFixed(AnonymousDelayedBanditEnv):
+class AnonymousDelayedBanditTwoArmStochasticReward(AnonymousDelayedBanditEnv):
     """10 armed bandit with random probabilities assigned to payouts"""
-    def __init__(self, bandits=10):
-        p_dist = np.random.uniform(size=bandits)
-        r_dist = np.full(bandits, 1)
-        d_dist = np.random.uniform(size=bandits)
+    def __init__(self, bandits=2):
+        p_dist = [1, 1]
+        r_dist = [functools.partial(np.random.uniform, 1, 3, 1), functools.partial(np.random.uniform, 2, 4, 1)]
+        d_dist = [2, 5]
+
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
 
-class AnonymousDelayedBanditTwoArm(AnonymousDelayedBanditEnv):
-    """10 armed bandit with random probabilities assigned to payouts"""
-    def __init__(self, bandits=10):
-        p_dist = [1, 1]
-        r_dist = [1, 1]
-        d_dist = [2, 1]
 
-        d_dist = np.random.uniform(size=bandits)
+class AnonymousDelayedBanditTwoArmedStochasticDelay(AnonymousDelayedBanditEnv):
+    """10 armed bandit with random probabilities assigned to payouts"""
+
+    def __init__(self, bandits=2):
+        p_dist = [1, 1]
+        r_dist = [2, 5]
+        d_dist = [functools.partial(np.random.uniform, 1, 3, 1), functools.partial(np.random.uniform, 3, 5, 1)]
+
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
+
+
+class AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward(AnonymousDelayedBanditEnv):
+    """10 armed bandit with random probabilities assigned to payouts"""
+
+    def __init__(self, bandits=2):
+        p_dist = [1, 1]
+        r_dist = [functools.partial(np.random.uniform, 1, 3, 1), functools.partial(np.random.uniform, 3, 5, 1)]
+        d_dist = [functools.partial(np.random.uniform, 1, 3, 1), functools.partial(np.random.uniform, 3, 5, 1)]
+
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
