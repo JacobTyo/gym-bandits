@@ -14,12 +14,3 @@ for i in range(1000):
     observation -= 1
 
 print(returned_hist['received'])
-
-    # print(returned_hist['arm'][observation])
-    # print(returned_hist['reward'][observation])
-    # print(returned_hist['delay'][observation])
-    # print(returned_hist['received'][observation])
-    # print('---------')
-    # if done:
-    #     break
-

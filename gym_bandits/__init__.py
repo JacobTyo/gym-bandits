@@ -12,6 +12,8 @@ from .anonymous_delayed_bandit import AnonymousDelayedBanditTwoArmedDeterministi
 from .anonymous_delayed_bandit import AnonymousDelayedBanditTwoArmedStochasticDelay
 from .anonymous_delayed_bandit import AnonymousDelayedBanditTwoArmStochasticReward
 from .anonymous_delayed_bandit import AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward
+from .anonymous_delayed_bandit import AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward
+
 
 environments = [['BanditTenArmedRandomFixed', 'v0'],
                 ['BanditTenArmedRandomRandom', 'v0'],
@@ -24,7 +26,8 @@ environments = [['BanditTenArmedRandomFixed', 'v0'],
                 ['AnonymousDelayedBanditTwoArmedDeterministic', 'v0'],
                 ['AnonymousDelayedBanditTwoArmStochasticReward', 'v0'],
                 ['AnonymousDelayedBanditTwoArmedStochasticDelay', 'v0'],
-                ['AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward', 'v0']]
+                ['AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward', 'v0'],
+                ['AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward', 'v0']]
 
 for environment in environments:
     register(
