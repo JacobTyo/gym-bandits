@@ -72,7 +72,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
         reward_from_this_pull = 0
         delay_this_pull = None
 
-        arm_did_payout = True if np.random.uniform(0, 1, 1)[0] < self.p_dist[arm] else False
+        arm_did_payout = True if np.random.uniform(0, 1, 1)[0] <= self.p_dist[arm] else False
 
         if arm_did_payout:
             # If the arm payed out, what was the reward?
@@ -81,7 +81,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
             else:
                 reward_from_this_pull = self.r_dist[arm]
 
-            if type(reward_from_this_pull) is np.ndarray:
+            if type(reward_from_this_pull) is not int or type(reward_from_this_pull) is not float:
                 reward_from_this_pull = reward_from_this_pull[0]
 
             # and what delay is associated with that reward?
@@ -91,7 +91,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
                 delay_this_pull = self.d_dist[arm]
 
         # ensure that delay is non-negative int (it is an index)
-        delay_this_pull = int(delay_this_pull if delay_this_pull >= 0 else 0)
+        delay_this_pull = int(delay_this_pull) if int(delay_this_pull) >= 0 else 0
 
         # add the reward to the corresponding location in self.reward
         self.reward[delay_this_pull] += reward_from_this_pull
@@ -182,15 +182,15 @@ class AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward(AnonymousDel
                   functools.partial(np.random.uniform, -10, -1, 1),
                   functools.partial(np.random.uniform, -1, 0, 1)]
 
-        d_dist = [functools.partial(np.random.uniform, 1, 3, 1),
-                  functools.partial(np.random.uniform, 3, 5, 1),
-                  functools.partial(np.random.uniform, 0, 1, 1),
-                  functools.partial(np.random.uniform, 5, 12, 1),
-                  functools.partial(np.random.uniform, 1, 2, 1),
-                  functools.partial(np.random.uniform, 1, 2, 1),
-                  functools.partial(np.random.uniform, 3, 5, 1),
-                  functools.partial(np.random.uniform, 7, 12, 1),
-                  functools.partial(np.random.uniform, 1, 2, 1),
-                  functools.partial(np.random.uniform, 5, 10, 1)]
+        d_dist = [functools.partial(np.random.poisson, 10, 1),
+                  functools.partial(np.random.poisson, 10, 1),
+                  functools.partial(np.random.poisson, 10, 1),
+                  functools.partial(np.random.poisson, 10, 1),
+                  functools.partial(np.random.poisson, 8, 1),
+                  functools.partial(np.random.poisson, 10, 1),
+                  functools.partial(np.random.poisson, 1, 1),
+                  functools.partial(np.random.poisson, 10, 1),
+                  functools.partial(np.random.poisson, 10, 1),
+                  functools.partial(np.random.poisson, 10, 1)]
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)

@@ -26,9 +26,16 @@ total_rewards = [0 for _ in range(horizon)]
 cumulative_reward = 0
 cumulative_reward_list = [0 for _ in range(horizon)]
 
+optimal_reward = 5.5
+optimal_reward_list = [optimal_reward*a for a in range(horizon)]
+
 bridge_period = 25
 
+overall_iterations = 0
+upper_bound_on_delay = 15
 num_required_pulls_phase1 = 100
+# num_required_pulls_phase1 = np.log(horizon * tolarance ** 2) / (tolarance ** 2) + \
+#                             overall_iterations * upper_bound_on_delay / tolarance
 
 previous_action = 0
 
@@ -66,11 +73,14 @@ while i < horizon:
     print("Arm Averages: ", post_phase1_arm_averages)
     print("++++++++++++")
     for j in range(num_arms):
-        if post_phase1_arm_averages[j] + tolarance < max_arm_avg:
-            eliminated_arms[j] = 1
+        if eliminated_arms[j] != 1:
+            if post_phase1_arm_averages[j] + tolarance < max_arm_avg:
+                eliminated_arms[j] = 1
 
     # decrease tolarance
     tolarance = tolarance / 2.0
+    # num_required_pulls_phase1 = np.log(horizon * tolarance ** 2) / (tolarance ** 2) + \
+    #                             overall_iterations * upper_bound_on_delay / np.clip(tolarance, 0.00005, 99999)
 
     # print("Entering Bridge Period")
     # Just run through some steps to prevent rewards from seeping between phases
@@ -104,7 +114,8 @@ while i < horizon:
 # plt.plot(total_rewards)
 # plt.show()
 # plt.figure()
-plt.plot(cumulative_reward_list[:10000])
+plt.plot(np.arange(10000), cumulative_reward_list[:10000], np.arange(10000), optimal_reward_list[:10000])
 plt.show()
 print(eliminated_arms)
 print(cumulative_reward)
+
