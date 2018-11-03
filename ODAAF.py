@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 # Environment Initializations
-env = gym.make("AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward-v0")
+env = gym.make("AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2-v0")
 
 num_runs = 50
 
@@ -128,11 +128,11 @@ for z in tqdm(range(num_runs)):
     # plt.show()
     # print(eliminated_arms)
     # print(cumulative_reward)
-    regret = (np.asarray(total_rewards) - np.asarray(optimal_reward_list)).tolist()
+    regret = (np.asarray(total_rewards) - np.asarray(optimal_reward_list_each_step)).tolist()
     all_regrets[z, :] = np.asarray(regret)
 
 
 # plt.show()
 
-plt.plot(np.mean(all_regrets, axis=0))
+plt.plot(np.arange(10000), np.mean(all_regrets, axis=0)[:10000])
 plt.show()
