@@ -37,7 +37,7 @@ for z in tqdm(range(num_runs)):
 
     optimal_reward = 5.5
     optimal_reward_list = [optimal_reward*a for a in range(horizon)]
-    optimal_reward_list_each_step = [optimal_reward for a in range(horizon)]
+    optimal_reward_list_each_step = [0 if a < 10 else optimal_reward for a in range(horizon)]
 
     bridge_period = 25
 
@@ -128,7 +128,7 @@ for z in tqdm(range(num_runs)):
     # plt.show()
     # print(eliminated_arms)
     # print(cumulative_reward)
-    regret = (np.asarray(total_rewards) - np.asarray(optimal_reward_list_each_step)).tolist()
+    regret = (np.asarray(optimal_reward_list) - np.asarray(cumulative_reward_list)).tolist()
     all_regrets[z, :] = np.asarray(regret)
 
 
