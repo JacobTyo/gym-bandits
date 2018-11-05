@@ -103,10 +103,7 @@ class OdaafExpectedDelay():
         self.phase1_pull_results = [[] for _ in range(self.num_arms)]
         self.tolerance = self.tolerance / 2.0
         self.num_required_pulls_phase1 = self.setnm()
-        returned_hist['eliminated_arms'] = self.eliminated_arms
         return returned_hist
-
-
 
 class OdaafExpectedBoundedDelay():
     def __init__(self, env, horizon, num_arms, tolerance, expected_delay, delay_upper_bound, bridge_period=25):
