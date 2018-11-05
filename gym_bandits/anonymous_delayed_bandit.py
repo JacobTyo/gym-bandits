@@ -271,3 +271,65 @@ class Chirag(AnonymousDelayedBanditEnv):
                   functools.partial(np.random.uniform, 200, 500, 1)]
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
+
+
+class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
+    def __init__(self, bandits=10):
+        p_dist = [1 for i in range(bandits)]
+
+        r_dist = [functools.partial(np.random.normal, 0.01, 1, 1),
+                  functools.partial(np.random.normal, 0.1, 1, 1),
+                  functools.partial(np.random.normal, 0.2, 1, 1),
+                  functools.partial(np.random.normal, 0.3, 1, 1),
+                  functools.partial(np.random.normal, 0.4, 1, 1),
+                  functools.partial(np.random.normal, 0.5, 1, 1),
+                  functools.partial(np.random.normal, 0.7, 1, 1),
+                  functools.partial(np.random.normal, 0.8, 1, 1),
+                  functools.partial(np.random.normal, 0.9, 1, 1),
+                  functools.partial(np.random.normal, 0.99, 1, 1)]
+
+        self.means = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 0.99]
+
+        d_dist = [functools.partial(np.random.poisson, 8, 1),
+                  functools.partial(np.random.poisson, 3, 1),
+                  functools.partial(np.random.poisson, 4, 1),
+                  functools.partial(np.random.poisson, 7, 1),
+                  functools.partial(np.random.poisson, 2, 1),
+                  functools.partial(np.random.poisson, 1, 1),
+                  functools.partial(np.random.poisson, 7, 1),
+                  functools.partial(np.random.poisson, 9, 1),
+                  functools.partial(np.random.poisson, 2, 1),
+                  functools.partial(np.random.poisson, 5, 1)]
+
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
+
+
+class AdaBanditsOutliers(AnonymousDelayedBanditEnv):
+    def __init__(self, bandits=10):
+        p_dist = [1 for i in range(bandits)]
+
+        r_dist = [functools.partial(np.random.normal, 0.01, 1, 1),
+                  functools.partial(np.random.normal, 0.1, 1, 1),
+                  functools.partial(np.random.normal, 0.2, 1, 1),
+                  functools.partial(np.random.normal, 0.3, 1, 1),
+                  functools.partial(np.random.normal, 0.4, 1, 1),
+                  functools.partial(np.random.normal, 0.5, 1, 1),
+                  functools.partial(np.random.normal, 0.7, 1, 1),
+                  functools.partial(np.random.normal, 0.8, 1, 1),
+                  functools.partial(np.random.normal, 0.9, 1, 1),
+                  functools.partial(np.random.normal, 0.99, 1, 1)]
+
+        self.means = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 0.99]
+
+        d_dist = [functools.partial(np.random.poisson, 8, 1),
+                  functools.partial(np.random.poisson, 3, 1),
+                  functools.partial(np.random.poisson, 4, 1),
+                  functools.partial(np.random.poisson, 7, 1),
+                  functools.partial(np.random.poisson, 2, 1),
+                  functools.partial(np.random.poisson, 1, 1),
+                  functools.partial(np.random.poisson, 7, 1),
+                  functools.partial(np.random.poisson, 9, 1),
+                  functools.partial(np.random.poisson, 25, 1),  # This is the outlier
+                  functools.partial(np.random.poisson, 5, 1)]
+
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)

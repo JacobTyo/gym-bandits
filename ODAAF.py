@@ -103,10 +103,7 @@ class OdaafExpectedDelay():
         self.phase1_pull_results = [[] for _ in range(self.num_arms)]
         self.tolerance = self.tolerance / 2.0
         self.num_required_pulls_phase1 = self.setnm()
-        returned_hist['eliminated_arms'] = self.eliminated_arms
         return returned_hist
-
-
 
 class OdaafExpectedBoundedDelay():
     def __init__(self, env, horizon, num_arms, tolerance, expected_delay, delay_upper_bound, bridge_period=25):
@@ -143,22 +140,25 @@ class OdaafExpectedBoundedDelay():
                                               np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
                                                       self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
                                                       6 * self.tolerance * self.phase_count * self.expected_delay)) ** 2
-                            ) / self.phase_count
+                            ) / (self.phase_count + 1)
 
         d_twidel = self.delay_upper_bound if self.delay_upper_bound <= d_min_comparison else d_min_comparison
 
         return nm if nm >= self.phase_count * d_twidel else self.phase_count * d_twidel
 
     def play(self):
-        # determine what phase we are in and play
-        if self.step == 0:
-            self.phase1()
+        # be lazy for now
+        while self.iteration < self.horizon:
 
-        elif self.step == 1:
-            self.phase2()
+            if self.step == 0:
+                hist = self.phase1()
 
-        elif self.step == 2:
-            self.phase3()
+            elif self.step == 1:
+                self.phase2()
+
+            elif self.step == 2:
+                hist = self.phase3()
+        return hist
 
     def phase1(self):
         # This is the phase to play the arms
@@ -175,6 +175,7 @@ class OdaafExpectedBoundedDelay():
                 self.cumulative_reward_list[self.iteration] = self.cumulative_reward
                 self.iteration += 1
         self.step = 1
+        return returned_hist
 
     def phase2(self):
         for j in range(self.num_arms):
@@ -196,7 +197,7 @@ class OdaafExpectedBoundedDelay():
                 # play the arm, otherwise it has been eliminated
                 for k in range(self.bridge_period):
                     if self.iteration < self.horizon:
-                        _, reward, _, _ = self.env.step(j)
+                        _, reward, _, returned_hist = self.env.step(j)
                         self.total_rewards[self.iteration] = reward
                         self.cumulative_reward += reward
                         self.cumulative_reward_list[self.iteration] = self.cumulative_reward
@@ -211,6 +212,7 @@ class OdaafExpectedBoundedDelay():
         self.phase1_pull_results = [[] for _ in range(self.num_arms)]
         self.tolerance = self.tolerance / 2.0
         self.num_required_pulls_phase1 = self.setnm()
+        return returned_hist
 
 
 class OdaafBoundedDelayExpectationVariance():
@@ -251,15 +253,18 @@ class OdaafBoundedDelayExpectationVariance():
         return nm
 
     def play(self):
-        # determine what phase we are in and play
-        if self.step == 0:
-            self.phase1()
+        # be lazy for now
+        while self.iteration < self.horizon:
 
-        elif self.step == 1:
-            self.phase2()
+            if self.step == 0:
+                hist = self.phase1()
 
-        elif self.step == 2:
-            self.phase3()
+            elif self.step == 1:
+                self.phase2()
+
+            elif self.step == 2:
+                hist = self.phase3()
+        return hist
 
     def phase1(self):
         # This is the phase to play the arms
@@ -276,6 +281,7 @@ class OdaafBoundedDelayExpectationVariance():
                 self.cumulative_reward_list[self.iteration] = self.cumulative_reward
                 self.iteration += 1
         self.step = 1
+        return returned_hist
 
     def phase2(self):
         for j in range(self.num_arms):
@@ -297,7 +303,7 @@ class OdaafBoundedDelayExpectationVariance():
                 # play the arm, otherwise it has been eliminated
                 for k in range(self.bridge_period):
                     if self.iteration < self.horizon:
-                        _, reward, _, _ = self.env.step(j)
+                        _, reward, _, returned_hist = self.env.step(j)
                         self.total_rewards[self.iteration] = reward
                         self.cumulative_reward += reward
                         self.cumulative_reward_list[self.iteration] = self.cumulative_reward
@@ -312,3 +318,4 @@ class OdaafBoundedDelayExpectationVariance():
         self.phase1_pull_results = [[] for _ in range(self.num_arms)]
         self.tolerance = self.tolerance / 2.0
         self.num_required_pulls_phase1 = self.setnm()
+        return returned_hist
