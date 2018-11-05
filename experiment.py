@@ -25,7 +25,9 @@ def main():
                 'AnonymousDelayedBanditTwoArmStochasticReward',
                 'AnonymousDelayedBanditTwoArmedStochasticDelay',
                 'AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward',
-                'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward'], help='bandit environment')
+                'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward',
+                'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward1',
+                'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2'], help='bandit environment')
     args = parser.parse_args()
 
     # Setup
