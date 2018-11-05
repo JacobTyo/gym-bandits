@@ -3,136 +3,90 @@ import gym_bandits
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import ODAAF
 
 # Environment Initializations
-env = gym.make("AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2-v0")
+# env = gym.make("AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2-v0")
+env = gym.make("Chirag-v0")
 
-num_runs = 50
+num_runs = 2
 
-horizon = 250000  # total number of rounds
+horizon = 250000
 
 regret = [0 for _ in range(horizon)]
-
 all_regrets = np.zeros((50, horizon))
+rewards = [0 for _ in range(horizon)]
+
+results = {}
 
 for z in tqdm(range(num_runs)):
 
     env.reset()
 
-    # Algorithm Initializations
-    tolarance = 5
-    num_arms = 10
-    active_arms_number = num_arms  # ten arm bandit for this example
-    arm_pulls = [0 for _ in range(num_arms)]
-    phase1_pull_results = [[] for _ in range(num_arms)]
-
-    eliminated_arms = [0 for _ in range(num_arms)]
-
-    post_phase1_arm_averages = [0 for _ in range(num_arms)]
-
-    total_rewards = [0 for _ in range(horizon)]
-
-    cumulative_reward = 0
-    cumulative_reward_list = [0 for _ in range(horizon)]
-
-    optimal_reward = 5.5
-    optimal_reward_list = [optimal_reward*a for a in range(horizon)]
-    optimal_reward_list_each_step = [0 if a < 10 else optimal_reward for a in range(horizon)]
-
-    bridge_period = 25
-
-    overall_iterations = 0
-    upper_bound_on_delay = 15
-    num_required_pulls_phase1 = 100
-    # num_required_pulls_phase1 = np.log(horizon * tolarance ** 2) / (tolarance ** 2) + \
-    #                             overall_iterations * upper_bound_on_delay / tolarance
-
-    previous_action = 0
-
-    current_step = 1
-    i = 0
-    # TODO: this will break down if all rewards are negative (because of how arms are eliminated)
-    while i < horizon:
-        # Step 1: Play arms
-
-        # print("Starting Phase 1")
-        for j in range(num_arms):
-            if eliminated_arms[j] == 1:
-                continue  # arm has been eliminated, don't play it
-            starting_i = i
-            while i - starting_i <= num_required_pulls_phase1 and i < horizon:
-                observation, reward, done, returned_hist = env.step(j)
-                phase1_pull_results[j].append(reward)
-                total_rewards[j] = reward
-                cumulative_reward += reward
-                cumulative_reward_list[i] = cumulative_reward
-                i += 1
-
-        # print("Advancing to Phase 2")
-        current_step = 2
-
-        # print("Starting Phase 2")
-        # compute the averages
-        for j in range(num_arms):
-            if eliminated_arms[j] != 1:
-                post_phase1_arm_averages[j] = sum(phase1_pull_results[j]) / len(phase1_pull_results[j])
-
-        # Eliminate sub-optimal arms  TODO Verify this (tolerance seems bad)
-        max_arm_avg = max(post_phase1_arm_averages)
-        # print("Max arm avg: ", max_arm_avg)
-        # print("Arm Averages: ", post_phase1_arm_averages)
-        # print("++++++++++++")
-        for j in range(num_arms):
-            if eliminated_arms[j] != 1:
-                if post_phase1_arm_averages[j] + tolarance < max_arm_avg:
-                    eliminated_arms[j] = 1
-
-        # decrease tolarance
-        tolarance = tolarance / 2.0
-        # num_required_pulls_phase1 = np.log(horizon * tolarance ** 2) / (tolarance ** 2) + \
-        #                             overall_iterations * upper_bound_on_delay / np.clip(tolarance, 0.00005, 99999)
-
-        # print("Entering Bridge Period")
-        # Just run through some steps to prevent rewards from seeping between phases
-
-        for j in range(num_arms):
-            if eliminated_arms[j] != 1:
-                # play the arm, otherwise it has been eliminated
-                for k in range(bridge_period):
-                    if i < horizon:
-                        _, reward, _, _ = env.step(j)
-                        total_rewards[i] = reward
-                        cumulative_reward += reward
-                        cumulative_reward_list[i] = cumulative_reward
-                        i += 1
-                    else:
-                        break
+    alg = ODAAF.OdaafExpectedDelay(env=env,
+                                   horizon=horizon,
+                                   num_arms=env.action_space.n,
+                                   tolerance=5000,
+                                   expected_delay=10,
+                                   bridge_period=25)
+    results[z] = alg.play()
 
 
-        # print("Finished Bridge Period")
+sampled_run = results[0]
+single_run_reward = sampled_run['reward']
+single_run_cumulated_reward_counter = 0
+single_run_cumulated_reward = []
 
-        # reset averages and rewards
-        post_phase1_arm_averages = [0 for _ in range(num_arms)]
-        phase1_pull_results = [[] for _ in range(num_arms)]
-        arm_pulls = [0 for _ in range(num_arms)]
+all_rewards = [results[a]['reward'] for a in range(num_runs)]
+averaged_reward = np.sum(np.asarray(all_rewards), axis=0) / num_runs
+cumulated_average_reward = []
+cumulated_reward = 0
 
-        # print(eliminated_arms)
-        # print("--------------")
+all_expected_rewards = [results[a]['expected_reward'] for a in range(num_runs)]
+averaged_all_expected_rewards = np.sum(np.asarray(all_expected_rewards), axis=0) / num_runs
+cumulated_expected_rewards_counter = 0
+cumulated_expected_rewards = []
 
-        # TODO: Is the reward supposed to be bounded [0, 1]?
-
-    # plt.plot(total_rewards)
-    # plt.show()
-    # plt.figure()
-    # plt.plot(np.arange(10000), cumulative_reward_list[:10000], np.arange(10000), optimal_reward_list[:10000])
-    # plt.show()
-    # print(eliminated_arms)
-    # print(cumulative_reward)
-    regret = (np.asarray(optimal_reward_list) - np.asarray(cumulative_reward_list)).tolist()
-    all_regrets[z, :] = np.asarray(regret)
+all_optimal = [results[a]['optimal_mean'] for a in range(num_runs)]
+averaged_optimal = np.sum(np.asarray(all_optimal), axis=0) / num_runs
+cumulated_optimal = [averaged_optimal*n for n in range(horizon)]
 
 
-# plt.show()
+regret = averaged_optimal - averaged_reward
+cumulated_regret = 0
+regret_plot = []
+for i in range(len(regret)):
+    cumulated_regret += regret[i]
+    regret_plot.append(cumulated_regret)
+    cumulated_reward += averaged_reward[i]
+    cumulated_average_reward.append(cumulated_reward)
+    single_run_cumulated_reward_counter += single_run_reward[i]
+    single_run_cumulated_reward.append(single_run_cumulated_reward_counter)
 
-plt.plot(np.arange(10000), np.mean(all_regrets, axis=0)[:10000])
+    #expected rewards
+    cumulated_expected_rewards_counter += averaged_all_expected_rewards[i]
+    cumulated_expected_rewards.append(cumulated_expected_rewards_counter)
+
+# book def regret
+regret_final = []
+for i in range(horizon):
+    regret_final.append(averaged_optimal * i - cumulated_expected_rewards[i])
+
+plot_steps = 20000
+
+ax1 = plt.subplot(2, 2, 1)
+ax1.plot(np.arange(plot_steps), cumulated_average_reward[:plot_steps], np.arange(plot_steps), cumulated_optimal[:plot_steps])
+ax1.set_title('Average Reward and Optimal Reward vs Time Step')
+ax2 = plt.subplot(2, 2, 2)
+ax2.plot(np.arange(plot_steps), regret_plot[:plot_steps])
+ax2.set_title('Average Regret vs Time Step')
+ax3 = plt.subplot(2, 2, 3)
+ax3.plot(np.arange(plot_steps), single_run_cumulated_reward[:plot_steps], np.arange(plot_steps), cumulated_optimal[:plot_steps])
+ax3.set_title('Single Run Reward and Optimal Reward vs Time Step')
+ax4 = plt.subplot(2, 2, 4)
+ax4.plot(np.arange(plot_steps), regret_final[:plot_steps])
+ax4.set_title("Final Reward vs Time Step")
+
+print(results[0]['eliminated_arms'])
+
 plt.show()

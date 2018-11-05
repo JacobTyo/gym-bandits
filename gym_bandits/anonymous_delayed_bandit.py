@@ -197,7 +197,7 @@ class AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward1(AnonymousDe
                   functools.partial(np.random.poisson, 10, 1),
                   functools.partial(np.random.poisson, 10, 1)]
 
-        self.means = [2.0, 4.0, 0.5, -1.5, -4.5, 0.5, 1.5, 5.5, -5.5, -0.5]
+        self.means = [2.0, 4.0, 0.5, -1.5, -4, 0.5, 1.5, 5.5, -5.5, -0.5]
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
 
 
@@ -218,6 +218,8 @@ class AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2(AnonymousDe
                   functools.partial(np.random.uniform, -10, -1, 1),
                   functools.partial(np.random.uniform, -1, 0, 1)]
 
+        self.means = [2.0, 4.0, 0.5, -1.5, -4, 0.5, 1.5, 5.5, -5.5, -0.5]
+
         d_dist = [functools.partial(np.random.uniform, 1, 3, 1),
                   functools.partial(np.random.uniform, 3, 5, 1),
                   functools.partial(np.random.uniform, 0, 1, 1),
@@ -228,5 +230,38 @@ class AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2(AnonymousDe
                   functools.partial(np.random.uniform, 7, 12, 1),
                   functools.partial(np.random.uniform, 1, 2, 1),
                   functools.partial(np.random.uniform, 5, 10, 1)]
+
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
+
+
+class Chirag(AnonymousDelayedBanditEnv):
+    """10 armed bandit with random probabilities assigned to payouts"""
+
+    def __init__(self, bandits=10):
+        p_dist = [1 for i in range(bandits)]
+
+        r_dist = [functools.partial(np.random.uniform, 1, 3, 1),
+                  functools.partial(np.random.uniform, 3, 5, 1),
+                  functools.partial(np.random.uniform, 0, 1, 1),
+                  functools.partial(np.random.uniform, -2, -1, 1),
+                  functools.partial(np.random.uniform, -5, -3, 1),
+                  functools.partial(np.random.uniform, 0, 1, 1),
+                  functools.partial(np.random.uniform, 1, 2, 1),
+                  functools.partial(np.random.uniform, 1, 10, 1),
+                  functools.partial(np.random.uniform, -10, -1, 1),
+                  functools.partial(np.random.uniform, 100, 120, 1)]
+
+        self.means = [2.0, 4.0, 0.5, -1.5, -4, 0.5, 1.5, 5.5, -5.5, 0]
+
+        d_dist = [functools.partial(np.random.uniform, 1, 3, 1),
+                  functools.partial(np.random.uniform, 3, 5, 1),
+                  functools.partial(np.random.uniform, 0, 1, 1),
+                  functools.partial(np.random.uniform, 5, 12, 1),
+                  functools.partial(np.random.uniform, 1, 2, 1),
+                  functools.partial(np.random.uniform, 1, 2, 1),
+                  functools.partial(np.random.uniform, 3, 5, 1),
+                  functools.partial(np.random.uniform, 7, 12, 1),
+                  functools.partial(np.random.uniform, 1, 2, 1),
+                  functools.partial(np.random.uniform, 200, 500, 1)]
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)

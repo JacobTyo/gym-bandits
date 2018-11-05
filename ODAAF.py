@@ -4,135 +4,311 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-# Environment Initializations
-env = gym.make("AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2-v0")
 
-num_runs = 50
+class OdaafExpectedDelay():
+    def __init__(self, env, horizon, num_arms, tolerance, expected_delay, bridge_period=25):
+        # Class variables
+        self.horizon = horizon
+        self.iteration = 0
+        self.step = 0
+        self.phase_count = 0
 
-horizon = 250000  # total number of rounds
+        self.env = env
 
-regret = [0 for _ in range(horizon)]
+        # Hyperparameters
+        self.tolerance = tolerance
+        self.num_arms = num_arms
+        self.expected_delay = expected_delay
+        self.bridge_period = bridge_period
 
-all_regrets = np.zeros((50, horizon))
+        self.eliminated_arms = [0 for _ in range(num_arms)]
+        self.phase1_pull_results = [[] for _ in range(num_arms)]
+        self.total_rewards = [0 for _ in range(horizon)]
+        self.cumulative_reward = 0
+        self.cumulative_reward_list = [0 for _ in range(horizon)]
+        self.post_phase1_arm_averages = [0 for _ in range(num_arms)]
 
-for z in tqdm(range(num_runs)):
+        self.num_required_pulls_phase1 = self.setnm()
 
-    env.reset()
+    def setnm(self):
+        nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
+                                              np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
+                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
+                                                      6 * self.tolerance * self.phase_count * self.expected_delay)) ** 2
+        return nm
 
-    # Algorithm Initializations
-    tolarance = 5
-    num_arms = 10
-    active_arms_number = num_arms  # ten arm bandit for this example
-    arm_pulls = [0 for _ in range(num_arms)]
-    phase1_pull_results = [[] for _ in range(num_arms)]
+    def play(self):
+        # be lazy for now
+        while self.iteration < self.horizon:
 
-    eliminated_arms = [0 for _ in range(num_arms)]
+            if self.step == 0:
+                hist = self.phase1()
 
-    post_phase1_arm_averages = [0 for _ in range(num_arms)]
+            elif self.step == 1:
+                self.phase2()
 
-    total_rewards = [0 for _ in range(horizon)]
+            elif self.step == 2:
+                hist = self.phase3()
+        return hist
 
-    cumulative_reward = 0
-    cumulative_reward_list = [0 for _ in range(horizon)]
+    def phase1(self):
+        # This is the phase to play the arms
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] == 1:
+                # arm has been eliminated, don't play it
+                continue
+            starting_i = self.iteration
+            while self.iteration - starting_i <= self.num_required_pulls_phase1 and self.iteration < self.horizon:
+                observation, reward, done, returned_hist = self.env.step(j)
+                self.phase1_pull_results[j].append(reward)
+                self.total_rewards[j] = reward
+                self.cumulative_reward += reward
+                self.cumulative_reward_list[self.iteration] = self.cumulative_reward
+                self.iteration += 1
+        self.step = 1
+        return returned_hist
 
-    optimal_reward = 5.5
-    optimal_reward_list = [optimal_reward*a for a in range(horizon)]
-    optimal_reward_list_each_step = [0 if a < 10 else optimal_reward for a in range(horizon)]
+    def phase2(self):
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] != 1:
+                self.post_phase1_arm_averages[j] = sum(self.phase1_pull_results[j]) / len(self.phase1_pull_results[j])
 
-    bridge_period = 25
+        # Eliminate sub-optimal arms
+        max_arm_avg = max(self.post_phase1_arm_averages)
 
-    overall_iterations = 0
-    upper_bound_on_delay = 15
-    num_required_pulls_phase1 = 100
-    # num_required_pulls_phase1 = np.log(horizon * tolarance ** 2) / (tolarance ** 2) + \
-    #                             overall_iterations * upper_bound_on_delay / tolarance
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] != 1:
+                if self.post_phase1_arm_averages[j] + self.tolerance < max_arm_avg:
+                    self.eliminated_arms[j] = 1
+        self.step = 2
 
-    previous_action = 0
-
-    current_step = 1
-    i = 0
-    # TODO: this will break down if all rewards are negative (because of how arms are eliminated)
-    while i < horizon:
-        # Step 1: Play arms
-
-        # print("Starting Phase 1")
-        for j in range(num_arms):
-            if eliminated_arms[j] == 1:
-                continue  # arm has been eliminated, don't play it
-            starting_i = i
-            while i - starting_i <= num_required_pulls_phase1 and i < horizon:
-                observation, reward, done, returned_hist = env.step(j)
-                phase1_pull_results[j].append(reward)
-                total_rewards[j] = reward
-                cumulative_reward += reward
-                cumulative_reward_list[i] = cumulative_reward
-                i += 1
-
-        # print("Advancing to Phase 2")
-        current_step = 2
-
-        # print("Starting Phase 2")
-        # compute the averages
-        for j in range(num_arms):
-            if eliminated_arms[j] != 1:
-                post_phase1_arm_averages[j] = sum(phase1_pull_results[j]) / len(phase1_pull_results[j])
-
-        # Eliminate sub-optimal arms  TODO Verify this (tolerance seems bad)
-        max_arm_avg = max(post_phase1_arm_averages)
-        # print("Max arm avg: ", max_arm_avg)
-        # print("Arm Averages: ", post_phase1_arm_averages)
-        # print("++++++++++++")
-        for j in range(num_arms):
-            if eliminated_arms[j] != 1:
-                if post_phase1_arm_averages[j] + tolarance < max_arm_avg:
-                    eliminated_arms[j] = 1
-
-        # decrease tolarance
-        tolarance = tolarance / 2.0
-        # num_required_pulls_phase1 = np.log(horizon * tolarance ** 2) / (tolarance ** 2) + \
-        #                             overall_iterations * upper_bound_on_delay / np.clip(tolarance, 0.00005, 99999)
-
-        # print("Entering Bridge Period")
-        # Just run through some steps to prevent rewards from seeping between phases
-
-        for j in range(num_arms):
-            if eliminated_arms[j] != 1:
+    def phase3(self):
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] != 1:
                 # play the arm, otherwise it has been eliminated
-                for k in range(bridge_period):
-                    if i < horizon:
-                        _, reward, _, _ = env.step(j)
-                        total_rewards[i] = reward
-                        cumulative_reward += reward
-                        cumulative_reward_list[i] = cumulative_reward
-                        i += 1
+                for k in range(self.bridge_period):
+                    if self.iteration < self.horizon:
+                        _, reward, _, returned_hist = self.env.step(j)
+                        self.total_rewards[self.iteration] = reward
+                        self.cumulative_reward += reward
+                        self.cumulative_reward_list[self.iteration] = self.cumulative_reward
+                        self.iteration += 1
                     else:
+                        self.step = 0
+                        self.phase_count += 1
                         break
+        self.step = 0
+        self.phase_count += 1
+        self.post_phase1_arm_averages = [0 for _ in range(self.num_arms)]
+        self.phase1_pull_results = [[] for _ in range(self.num_arms)]
+        self.tolerance = self.tolerance / 2.0
+        self.num_required_pulls_phase1 = self.setnm()
+        returned_hist['eliminated_arms'] = self.eliminated_arms
+        return returned_hist
 
 
-        # print("Finished Bridge Period")
 
-        # reset averages and rewards
-        post_phase1_arm_averages = [0 for _ in range(num_arms)]
-        phase1_pull_results = [[] for _ in range(num_arms)]
-        arm_pulls = [0 for _ in range(num_arms)]
+class OdaafExpectedBoundedDelay():
+    def __init__(self, env, horizon, num_arms, tolerance, expected_delay, delay_upper_bound, bridge_period=25):
+        # Class variables
+        self.horizon = horizon
+        self.iteration = 0
+        self.step = 0
+        self.phase_count = 0
 
-        # print(eliminated_arms)
-        # print("--------------")
+        self.env = env
 
-        # TODO: Is the reward supposed to be bounded [0, 1]?
+        # Hyperparameters
+        self.tolerance = tolerance
+        self.num_arms = num_arms
+        self.expected_delay = expected_delay
+        self.bridge_period = bridge_period
+        self.delay_upper_bound = delay_upper_bound
 
-    # plt.plot(total_rewards)
-    # plt.show()
-    # plt.figure()
-    # plt.plot(np.arange(10000), cumulative_reward_list[:10000], np.arange(10000), optimal_reward_list[:10000])
-    # plt.show()
-    # print(eliminated_arms)
-    # print(cumulative_reward)
-    regret = (np.asarray(optimal_reward_list) - np.asarray(cumulative_reward_list)).tolist()
-    all_regrets[z, :] = np.asarray(regret)
+        self.eliminated_arms = [0 for _ in range(num_arms)]
+        self.phase1_pull_results = [[] for _ in range(num_arms)]
+        self.total_rewards = [0 for _ in range(horizon)]
+        self.cumulative_reward = 0
+        self.cumulative_reward_list = [0 for _ in range(horizon)]
+        self.post_phase1_arm_averages = [0 for _ in range(num_arms)]
+
+        self.num_required_pulls_phase1 = self.setnm()
+
+    def setnm(self):
+        nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
+                                              np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
+                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
+                                                      4 * self.tolerance * self.expected_delay)) ** 2
+        d_min_comparison = ((1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
+                                              np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
+                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
+                                                      6 * self.tolerance * self.phase_count * self.expected_delay)) ** 2
+                            ) / self.phase_count
+
+        d_twidel = self.delay_upper_bound if self.delay_upper_bound <= d_min_comparison else d_min_comparison
+
+        return nm if nm >= self.phase_count * d_twidel else self.phase_count * d_twidel
+
+    def play(self):
+        # determine what phase we are in and play
+        if self.step == 0:
+            self.phase1()
+
+        elif self.step == 1:
+            self.phase2()
+
+        elif self.step == 2:
+            self.phase3()
+
+    def phase1(self):
+        # This is the phase to play the arms
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] == 1:
+                # arm has been eliminated, don't play it
+                continue
+            starting_i = self.iteration
+            while self.iteration - starting_i <= self.num_required_pulls_phase1 and self.iteration < self.horizon:
+                observation, reward, done, returned_hist = self.env.step(j)
+                self.phase1_pull_results[j].append(reward)
+                self.total_rewards[j] = reward
+                self.cumulative_reward += reward
+                self.cumulative_reward_list[self.iteration] = self.cumulative_reward
+                self.iteration += 1
+        self.step = 1
+
+    def phase2(self):
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] != 1:
+                self.post_phase1_arm_averages[j] = sum(self.phase1_pull_results[j]) / len(self.phase1_pull_results[j])
+
+        # Eliminate sub-optimal arms
+        max_arm_avg = max(self.post_phase1_arm_averages)
+
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] != 1:
+                if self.post_phase1_arm_averages[j] + self.tolerance < max_arm_avg:
+                    self.eliminated_arms[j] = 1
+        self.step = 2
+
+    def phase3(self):
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] != 1:
+                # play the arm, otherwise it has been eliminated
+                for k in range(self.bridge_period):
+                    if self.iteration < self.horizon:
+                        _, reward, _, _ = self.env.step(j)
+                        self.total_rewards[self.iteration] = reward
+                        self.cumulative_reward += reward
+                        self.cumulative_reward_list[self.iteration] = self.cumulative_reward
+                        self.iteration += 1
+                    else:
+                        self.step = 0
+                        self.phase_count += 1
+                        break
+        self.step = 0
+        self.phase_count += 1
+        self.post_phase1_arm_averages = [0 for _ in range(self.num_arms)]
+        self.phase1_pull_results = [[] for _ in range(self.num_arms)]
+        self.tolerance = self.tolerance / 2.0
+        self.num_required_pulls_phase1 = self.setnm()
 
 
-# plt.show()
+class OdaafBoundedDelayExpectationVariance():
+    def __init__(self, env, horizon, num_arms, tolerance, expected_delay, delay_upper_bound, delay_variance,
+                 bridge_period=25):
+        # Class variables
+        self.horizon = horizon
+        self.iteration = 0
+        self.step = 0
+        self.phase_count = 0
 
-plt.plot(np.arange(10000), np.mean(all_regrets, axis=0)[:10000])
-plt.show()
+        self.env = env
+
+        # Hyperparameters
+        self.tolerance = tolerance
+        self.num_arms = num_arms
+        self.expected_delay = expected_delay
+        self.bridge_period = bridge_period
+        self.delay_upper_bound = delay_upper_bound
+        self.delay_variance = delay_variance
+
+        self.eliminated_arms = [0 for _ in range(num_arms)]
+        self.phase1_pull_results = [[] for _ in range(num_arms)]
+        self.total_rewards = [0 for _ in range(horizon)]
+        self.cumulative_reward = 0
+        self.cumulative_reward_list = [0 for _ in range(horizon)]
+        self.post_phase1_arm_averages = [0 for _ in range(num_arms)]
+
+        self.num_required_pulls_phase1 = self.setnm()
+
+    def setnm(self):
+        nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
+                                              np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
+                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
+                                                      4 * self.tolerance * (self.expected_delay +
+                                                                            2 * self.delay_variance))) ** 2
+
+        return nm
+
+    def play(self):
+        # determine what phase we are in and play
+        if self.step == 0:
+            self.phase1()
+
+        elif self.step == 1:
+            self.phase2()
+
+        elif self.step == 2:
+            self.phase3()
+
+    def phase1(self):
+        # This is the phase to play the arms
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] == 1:
+                # arm has been eliminated, don't play it
+                continue
+            starting_i = self.iteration
+            while self.iteration - starting_i <= self.num_required_pulls_phase1 and self.iteration < self.horizon:
+                observation, reward, done, returned_hist = self.env.step(j)
+                self.phase1_pull_results[j].append(reward)
+                self.total_rewards[j] = reward
+                self.cumulative_reward += reward
+                self.cumulative_reward_list[self.iteration] = self.cumulative_reward
+                self.iteration += 1
+        self.step = 1
+
+    def phase2(self):
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] != 1:
+                self.post_phase1_arm_averages[j] = sum(self.phase1_pull_results[j]) / len(self.phase1_pull_results[j])
+
+        # Eliminate sub-optimal arms
+        max_arm_avg = max(self.post_phase1_arm_averages)
+
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] != 1:
+                if self.post_phase1_arm_averages[j] + self.tolerance < max_arm_avg:
+                    self.eliminated_arms[j] = 1
+        self.step = 2
+
+    def phase3(self):
+        for j in range(self.num_arms):
+            if self.eliminated_arms[j] != 1:
+                # play the arm, otherwise it has been eliminated
+                for k in range(self.bridge_period):
+                    if self.iteration < self.horizon:
+                        _, reward, _, _ = self.env.step(j)
+                        self.total_rewards[self.iteration] = reward
+                        self.cumulative_reward += reward
+                        self.cumulative_reward_list[self.iteration] = self.cumulative_reward
+                        self.iteration += 1
+                    else:
+                        self.step = 0
+                        self.phase_count += 1
+                        break
+        self.step = 0
+        self.phase_count += 1
+        self.post_phase1_arm_averages = [0 for _ in range(self.num_arms)]
+        self.phase1_pull_results = [[] for _ in range(self.num_arms)]
+        self.tolerance = self.tolerance / 2.0
+        self.num_required_pulls_phase1 = self.setnm()
