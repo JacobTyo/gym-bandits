@@ -9,7 +9,7 @@ import ODAAF
 # env = gym.make("AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2-v0")
 env = gym.make("AdaBanditsBaseline-v0")
 
-num_runs = 100
+num_runs = 5
 
 horizon = 250000
 
@@ -92,7 +92,7 @@ for results in [results1, results2, results3]:
     for i in range(horizon):
         regret_final.append(averaged_optimal * i - cumulated_expected_rewards[i])
 
-    plot_steps = 20000
+    plot_steps = horizon
 
     ax1 = plt.subplot(2, 2, 1)
     ax1.plot(np.arange(plot_steps), cumulated_average_reward[:plot_steps], np.arange(plot_steps), cumulated_optimal[:plot_steps])
