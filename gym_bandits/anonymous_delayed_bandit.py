@@ -45,7 +45,9 @@ class AnonymousDelayedBanditEnv(gym.Env):
         self.history = {'arm': [],
                         'reward': [],
                         'delay': [],
-                        'received': []}
+                        'received': [],
+                        'expected_reward': [],
+                        'optimal_mean': np.amax(self.means)}
 
         self.n_bandits = len(p_dist)
         self.action_space = spaces.Discrete(self.n_bandits)
@@ -105,7 +107,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
         self.history['reward'].append(reward_from_this_pull)
         self.history['delay'].append(delay_this_pull)
         self.history['received'].append(reward_this_timestep)
-
+        self.history['expected_reward'].append(self.means[arm])
         self.time_step += 1
 
         # Technically, no reason to ever be "done"
@@ -119,7 +121,9 @@ class AnonymousDelayedBanditEnv(gym.Env):
         self.history = {'arm': [],
                         'reward': [],
                         'delay': [],
-                        'received': []}
+                        'received': [],
+                        'expected_reward': [],
+                        'optimal_mean': np.amax(self.means)}
         self.reward = [0 for i in range(self.horizon)]
         return 0
 
@@ -193,4 +197,5 @@ class AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward(AnonymousDel
                   functools.partial(np.random.poisson, 10, 1),
                   functools.partial(np.random.poisson, 10, 1)]
 
+        self.means = [2.0, 4.0, 0.5, -1.5, -4.5, 0.5, 1.5, 5.5, -5.5, -0.5]
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)

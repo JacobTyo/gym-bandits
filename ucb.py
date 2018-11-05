@@ -2,11 +2,11 @@ import numpy as np
 
 class UCB():
 
-    def __init__(self, k, delta):
+    def __init__(self, k, args):
         # number of arms
         self.k = k
         # ucb probability
-        self.delta = delta
+        self.delta = args.ucb_delta
         # current timestep; completed steps
         self.t = 0
         # empirical mean estimates
@@ -18,7 +18,7 @@ class UCB():
 
 
 
-    def act(self, reward):
+    def play(self, reward):
         # acumulate reward
         if self.last_action is not None:
             self.means[self.last_action] = self.T[self.last_action] * self.means[self.last_action] \
@@ -33,6 +33,6 @@ class UCB():
             action = np.argmax(ucbs)
 
         self.last_action = action
-        T[action] += 1
+        self.T[action] += 1
         self.t += 1
         return action
