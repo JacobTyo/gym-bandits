@@ -1,7 +1,6 @@
 import numpy as np
 
-class Ucb():
-
+class Delayed_Ucb():
     def __init__(self, k, args):
         # number of arms
         self.k = k
@@ -11,26 +10,28 @@ class Ucb():
         self.t = 0
         # empirical mean estimates
         self.means = np.zeros(k)
-        # count of plays per arm
-        self.T = np.zeros(k)
+        # count of received rewards per arm
+        self.S = np.zeros(k)
 
         self.last_action = None
 
 
 
-    def play(self, reward, **kwargs):
+    def play(self, reward, non_anon_reward, **kwargs):
         # acumulate reward
-        if self.last_action is not None:
-            self.means[self.last_action] = self.T[self.last_action] * self.means[self.last_action] \
-                                           / (self.T[self.last_action] + 1) + (reward / (self.T[self.last_action] + 1))
-            self.T[self.last_action] += 1
+        for reward in non_anon_reward:
+            self.means[reward[0]] = self.S[reward[0]] * self.means[reward[0]] \
+                                           / (self.S[reward[0]] + 1) + (reward[1] / (self.S[reward[0]] + 1))
+            self.S[reward[0]] += 1
 
         # choose action
         action = None
         if self.t < self.k:
             action = self.t
+        elif not non_anon_reward:
+            action = self.last_action
         else:
-            ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / self.T)
+            ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / self.S)
             action = np.argmax(ucbs)
 
         self.last_action = action
