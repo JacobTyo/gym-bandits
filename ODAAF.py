@@ -1,4 +1,6 @@
 import gym
+from scipy.sparse.linalg.isolve.tests.test_lsqr import tol
+
 import gym_bandits
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,6 +19,7 @@ class OdaafExpectedDelay():
 
         # Hyperparameters
         self.tolerance = tolerance
+        self.regret_upper_bound = []
         self.num_arms = num_arms
         self.expected_delay = expected_delay
         self.bridge_period = bridge_period
@@ -60,12 +63,14 @@ class OdaafExpectedDelay():
             starting_i = self.iteration
             while self.iteration - starting_i <= self.num_required_pulls_phase1 and self.iteration < self.horizon:
                 observation, reward, done, returned_hist = self.env.step(j)
+                self.regret_upper_bound.append(self.regret_bound())
                 self.phase1_pull_results[j].append(reward)
                 self.total_rewards[j] = reward
                 self.cumulative_reward += reward
                 self.cumulative_reward_list[self.iteration] = self.cumulative_reward
                 self.iteration += 1
         self.step = 1
+        returned_hist['regret_bound'] = self.regret_upper_bound
         return returned_hist
 
     def phase2(self):
@@ -89,6 +94,7 @@ class OdaafExpectedDelay():
                 for k in range(self.bridge_period):
                     if self.iteration < self.horizon:
                         _, reward, _, returned_hist = self.env.step(j)
+                        self.regret_upper_bound.append(self.regret_bound())
                         self.total_rewards[self.iteration] = reward
                         self.cumulative_reward += reward
                         self.cumulative_reward_list[self.iteration] = self.cumulative_reward
@@ -102,8 +108,17 @@ class OdaafExpectedDelay():
         self.post_phase1_arm_averages = [0 for _ in range(self.num_arms)]
         self.phase1_pull_results = [[] for _ in range(self.num_arms)]
         self.tolerance = self.tolerance / 2.0
+        self.tolerance_list.append(self.tolerance)
         self.num_required_pulls_phase1 = self.setnm()
+        returned_hist['regret_bound'] = self.regret_upper_bound
         return returned_hist
+
+    def regret_bound(self):
+        expected_regret = np.log(self.horizon * (self.tolerance**2)) / self.tolerance + \
+                           np.log(1/self.tolerance) * self.expected_delay
+        return expected_regret
+
+
 
 class OdaafExpectedBoundedDelay():
     def __init__(self, env, horizon, num_arms, tolerance, expected_delay, delay_upper_bound, bridge_period=25):
