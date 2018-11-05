@@ -42,11 +42,13 @@ class AnonymousDelayedBanditEnv(gym.Env):
 
         self.horizon = horizon
         self.reward = [0 for i in range(self.horizon)]
+        self.non_anon_reward = [[] for i in range(self.horizon + 1)]
         self.history = {'arm': [],
                         'reward': [],
                         'delay': [],
                         'received': [],
                         'expected_reward': [],
+                        'non_anon_reward': [],
                         'optimal_mean': np.amax(self.means)}
 
         self.n_bandits = len(p_dist)
@@ -97,17 +99,19 @@ class AnonymousDelayedBanditEnv(gym.Env):
 
         # add the reward to the corresponding location in self.reward
         self.reward[delay_this_pull] += reward_from_this_pull
+        self.non_anon_reward[delay_this_pull].append((arm, reward_from_this_pull))
 
         # TODO: THis is probably inefficient for large horizons - should rethink
-        reward_this_timestep = self.reward[0]
-        del self.reward[0]
-        self.reward.insert(len(self.reward), 0)
+        reward_this_timestep = self.reward.pop(0)
+        self.reward.append(0)
+        self.non_anon_reward.append([])
 
         self.history['arm'].append(arm)
         self.history['reward'].append(reward_from_this_pull)
         self.history['delay'].append(delay_this_pull)
         self.history['received'].append(reward_this_timestep)
         self.history['expected_reward'].append(self.means[arm])
+        self.history['non_anon_reward'] = self.non_anon_reward.pop(0)
         self.time_step += 1
 
         # Technically, no reason to ever be "done"
@@ -123,8 +127,10 @@ class AnonymousDelayedBanditEnv(gym.Env):
                         'delay': [],
                         'received': [],
                         'expected_reward': [],
+                        'non_anon_reward': [],
                         'optimal_mean': np.amax(self.means)}
         self.reward = [0 for i in range(self.horizon)]
+        self.non_anon_reward = [[] for i in range(self.horizon)]
         return 0
 
     def render(self, mode='human', close=False):
