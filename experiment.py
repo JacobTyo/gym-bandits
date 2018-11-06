@@ -6,16 +6,16 @@ import argparse
 import seaborn as sns
 from ucb import Ucb
 from delayed_ucb import Delayed_Ucb
+import ODAAF
 
 
 def run(args, alg):
 
     horizon = args.horizon
     results = []
+    env = gym.make(args.gym + "-v0")
 
     for run in range(args.repetitions):
-        # Setup
-        env = gym.make(args.gym + "-v0")
         env.reset()
 
         # New algorithms go here
@@ -71,16 +71,71 @@ def main():
     tempenv.reset()
     max_mean = tempenv.step(0)[-1]["optimal_mean"]
     # Results
-    for alg in algs:
+
+    ################### TEMP hack for Jake's odaaf ####################
+    env = gym.make(args.gym + "-v0")
+    temp = []
+    for _ in range(args.repetitions):
+        env.reset()
+        odaaf = ODAAF.OdaafExpectedDelay(env=env,
+                                          horizon=horizon,
+                                          num_arms=env.action_space.n,
+                                          tolerance=.5,
+                                          expected_delay=10,
+                                          bridge_period=25)
+        temp.append(odaaf.play())
+
+    temp = np.asarray([info["expected_reward"] for info in temp])
+    results["odaaf_ed"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
+
+    temp = []
+    for _ in range(args.repetitions):
+        env.reset()
+
+        odaaf = ODAAF.OdaafExpectedBoundedDelay(env=env,
+                                                horizon=horizon,
+                                                num_arms=env.action_space.n,
+                                                tolerance=.5,
+                                                expected_delay=10,
+                                                delay_upper_bound=20,
+                                                bridge_period=25)
+        temp.append(odaaf.play())
+
+    temp = np.asarray([info["expected_reward"] for info in temp])
+    results["odaaf_ebd"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
+    ######### End hack ##################
+
+    temp = []
+    for _ in range(args.repetitions):
+        env.reset()
+        odaaf = ODAAF.OdaafBoundedDelayExpectationVariance(env=env,
+                                                            horizon=horizon,
+                                                            num_arms=env.action_space.n,
+                                                            tolerance=.5,
+                                                            expected_delay=10,
+                                                            delay_upper_bound=20,
+                                                            delay_variance=5,
+                                                            bridge_period=25)
+        temp.append(odaaf.play())
+
+    temp = np.asarray([info["expected_reward"] for info in temp])
+    results["odaaf_bdev"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
+
+    plt.figure(figsize=(15, 7.5))
+    for alg in algs + ["odaaf_ed",
+                       "odaaf_ebd",
+                       "odaaf_bdev"]:
         mean = results[alg]["mean"]
         std = results[alg]["std"]
         total_regret = (max_mean * horizon) - np.sum(mean)
         print("{} mean regret per step: {}".format(alg, total_regret / horizon))
         cumregret = np.cumsum(max_mean - mean)
-        plt.semilogy(cumregret)
+        plt.semilogy(cumregret, label=alg)
         plt.fill_between(np.arange(horizon), cumregret - std, cumregret + std, alpha=0.5)
+
     plt.xlabel("Step")
     plt.ylabel("Cumulative Regret")
+    plt.legend(loc='upper left')
     plt.show()
     # plot rewards
     # plt.plot(rewards, label=args.alg)
