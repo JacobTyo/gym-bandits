@@ -58,7 +58,8 @@ def main():
                 'AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward',
                 'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward',
                 'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward1',
-                'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2'], help='bandit environment')
+                'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2'
+                'AdaBanditsBaseline'], help='bandit environment')
     args = parser.parse_args()
     horizon = args.horizon
 
@@ -81,7 +82,7 @@ def main():
                                           horizon=horizon,
                                           num_arms=env.action_space.n,
                                           tolerance=.5,
-                                          expected_delay=10,
+                                          expected_delay=5,
                                           bridge_period=25)
         temp.append(odaaf.play())
 
@@ -96,8 +97,8 @@ def main():
                                                 horizon=horizon,
                                                 num_arms=env.action_space.n,
                                                 tolerance=.5,
-                                                expected_delay=10,
-                                                delay_upper_bound=20,
+                                                expected_delay=5,
+                                                delay_upper_bound=30,
                                                 bridge_period=25)
         temp.append(odaaf.play())
 
@@ -112,8 +113,8 @@ def main():
                                                             horizon=horizon,
                                                             num_arms=env.action_space.n,
                                                             tolerance=.5,
-                                                            expected_delay=10,
-                                                            delay_upper_bound=20,
+                                                            expected_delay=5,
+                                                            delay_upper_bound=30,
                                                             delay_variance=5,
                                                             bridge_period=25)
         temp.append(odaaf.play())

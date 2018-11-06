@@ -28,6 +28,7 @@ class Delayed_Ucb():
         action = None
         if self.t < self.k:
             action = self.t
+
         elif not non_anon_reward:
             action = self.last_action
         else:

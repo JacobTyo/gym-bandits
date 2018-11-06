@@ -277,18 +277,19 @@ class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
         p_dist = [1 for i in range(bandits)]
 
-        r_dist = [functools.partial(np.random.normal, 0.01, 1, 1),
-                  functools.partial(np.random.normal, 0.1, 1, 1),
-                  functools.partial(np.random.normal, 0.2, 1, 1),
-                  functools.partial(np.random.normal, 0.3, 1, 1),
-                  functools.partial(np.random.normal, 0.4, 1, 1),
-                  functools.partial(np.random.normal, 0.5, 1, 1),
-                  functools.partial(np.random.normal, 0.7, 1, 1),
-                  functools.partial(np.random.normal, 0.8, 1, 1),
-                  functools.partial(np.random.normal, 0.9, 1, 1),
-                  functools.partial(np.random.normal, 0.99, 1, 1)]
+        r_dist = [
+                  functools.partial(np.random.normal, 1, 2, 1),
+                  functools.partial(np.random.normal, 2, 2, 1),
+                  functools.partial(np.random.normal, 3, 2, 1),
+                  functools.partial(np.random.normal, 4, 2, 1),
+                  functools.partial(np.random.normal, 5, 2, 1),
+                  functools.partial(np.random.normal, 6, 2, 1),
+                  functools.partial(np.random.normal, 7, 2, 1),
+                  functools.partial(np.random.normal, 8, 2, 1),
+                  functools.partial(np.random.normal, 9, 2, 1),
+                  functools.partial(np.random.normal, 10, 2, 1)]
 
-        self.means = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 0.99]
+        self.means = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
         d_dist = [functools.partial(np.random.poisson, 8, 1),
                   functools.partial(np.random.poisson, 3, 1),
