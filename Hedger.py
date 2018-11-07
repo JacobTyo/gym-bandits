@@ -1,9 +1,15 @@
 import numpy as np
 
 
-class Odaaf:
-    def __init__(self, horizon, num_arms, tolerance, expected_delay, delay_upper_bound=None, delay_variance=None,
+class Hedger:
+    def __init__(self, horizon, num_arms, tolerance, expected_delay, delay_upper_bound, delay_variance,
                  bridge_period=25):
+
+        self.k = 100
+        self.n = 20
+
+        # test with high expected delay 0 use that as k then set n to be k/10 or something 
+
         # Class variables
         self.horizon = horizon
         self.iteration = 0
@@ -23,8 +29,6 @@ class Odaaf:
         self.num_arms = num_arms
         self.expected_delay = expected_delay
         self.bridge_period = bridge_period
-        self.delay_upper_bound = delay_upper_bound
-        self.delay_variance = delay_variance
 
         self.eliminated_arms = [0 for _ in range(num_arms)]
         self.phase1_pull_results = [[] for _ in range(num_arms)]
@@ -33,10 +37,18 @@ class Odaaf:
         self.cumulative_reward_list = [0 for _ in range(horizon)]
         self.post_phase1_arm_averages = [0 for _ in range(num_arms)]
 
+        self.best_arm_rewards_so_far = [0 for _ in range(horizon)]
+
         self.num_required_pulls_phase1 = self.setnm()
 
     def setnm(self):
-        raise NotImplementedError('subclasses must override foo()!')
+        nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
+                                              np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
+                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
+                                                      4 * self.tolerance * (self.expected_delay +
+                                                                            2 * self.delay_variance))) ** 2
+
+        return nm
 
     def play(self, reward):
 
@@ -165,40 +177,3 @@ class Odaaf:
             self.get_next_arm(arm + 1)
         else:
             return arm
-
-
-class OdaafExpectedDelay(Odaaf):
-    def setnm(self):
-        nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
-                                              np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
-                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      6 * self.tolerance * self.phase_count * self.expected_delay)) ** 2
-        return nm
-
-
-class OdaafExpectedBoundedDelay(Odaaf):
-    def setnm(self):
-        nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
-                                              np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
-                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      4 * self.tolerance * self.expected_delay)) ** 2
-        d_min_comparison = ((1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
-                                              np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
-                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      6 * self.tolerance * self.phase_count * self.expected_delay)) ** 2
-                            ) / (self.phase_count + 1)
-
-        d_twidel = self.delay_upper_bound if self.delay_upper_bound <= d_min_comparison else d_min_comparison
-
-        return nm if nm >= self.phase_count * d_twidel else self.phase_count * d_twidel
-
-
-class OdaafBoundedDelayExpectationVariance(Odaaf):
-    def setnm(self):
-        nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
-                                              np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
-                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      4 * self.tolerance * (self.expected_delay +
-                                                                            2 * self.delay_variance))) ** 2
-
-        return nm

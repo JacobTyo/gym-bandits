@@ -78,8 +78,7 @@ def main():
     temp = []
     for _ in range(args.repetitions):
         env.reset()
-        odaaf = ODAAF.OdaafExpectedDelay(env=env,
-                                          horizon=horizon,
+        odaaf = ODAAF.OdaafExpectedDelay(horizon=horizon,
                                           num_arms=env.action_space.n,
                                           tolerance=.5,
                                           expected_delay=5,
@@ -93,8 +92,7 @@ def main():
     for _ in range(args.repetitions):
         env.reset()
 
-        odaaf = ODAAF.OdaafExpectedBoundedDelay(env=env,
-                                                horizon=horizon,
+        odaaf = ODAAF.OdaafExpectedBoundedDelay(horizon=horizon,
                                                 num_arms=env.action_space.n,
                                                 tolerance=.5,
                                                 expected_delay=5,
@@ -109,8 +107,7 @@ def main():
     temp = []
     for _ in range(args.repetitions):
         env.reset()
-        odaaf = ODAAF.OdaafBoundedDelayExpectationVariance(env=env,
-                                                            horizon=horizon,
+        odaaf = ODAAF.OdaafBoundedDelayExpectationVariance(horizon=horizon,
                                                             num_arms=env.action_space.n,
                                                             tolerance=.5,
                                                             expected_delay=5,

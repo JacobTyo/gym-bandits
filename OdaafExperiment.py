@@ -21,8 +21,7 @@ results1 = {}
 
 env.reset()
 
-Odaaf1 = ODAAF.OdaafExpectedDelay(env=env,
-                                  horizon=horizon,
+Odaaf1 = ODAAF.OdaafExpectedDelay(horizon=horizon,
                                   num_arms=env.action_space.n,
                                   tolerance=5,
                                   expected_delay=7,
@@ -35,6 +34,7 @@ for z in tqdm(range(horizon)):
     _, reward, _, results1 = env.step(action)
 
 
+# this doesn't work, but not used so not important
 for results in [results1]:
     sampled_run = results
     single_run_reward = sampled_run['reward']
