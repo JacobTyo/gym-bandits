@@ -9,7 +9,7 @@ import ODAAF
 # env = gym.make("AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2-v0")
 env = gym.make("AdaBanditsBaseline-v0")
 
-num_runs = 5
+num_runs = 1
 
 horizon = 250000
 
@@ -18,56 +18,40 @@ all_regrets = np.zeros((50, horizon))
 rewards = [0 for _ in range(horizon)]
 
 results1 = {}
-results2 = {}
-results3 = {}
 
-for z in tqdm(range(num_runs)):
+env.reset()
 
-    env.reset()
+Odaaf1 = ODAAF.OdaafExpectedDelay(env=env,
+                                  horizon=horizon,
+                                  num_arms=env.action_space.n,
+                                  tolerance=5,
+                                  expected_delay=7,
+                                  bridge_period=25)
 
-    Odaaf1 = ODAAF.OdaafExpectedDelay(env=env,
-                                      horizon=horizon,
-                                      num_arms=env.action_space.n,
-                                      tolerance=.5,
-                                      expected_delay=10,
-                                      bridge_period=25)
-    Odaaf2 = ODAAF.OdaafExpectedBoundedDelay(env=env,
-                                             horizon=horizon,
-                                             num_arms=env.action_space.n,
-                                             tolerance=.5,
-                                             expected_delay=10,
-                                             delay_upper_bound=20,
-                                             bridge_period=25)
-    Odaaf3 = ODAAF.OdaafBoundedDelayExpectationVariance(env=env,
-                                                        horizon=horizon,
-                                                        num_arms=env.action_space.n,
-                                                        tolerance=.5,
-                                                        expected_delay=10,
-                                                        delay_upper_bound=20,
-                                                        delay_variance=5,
-                                                        bridge_period=25)
-    results1[z] = Odaaf1.play()
-    results2[z] = Odaaf2.play()
-    results3[z] = Odaaf3.play()
+reward = 0
+for z in tqdm(range(horizon)):
+
+    action = Odaaf1.play(reward)
+    _, reward, _, results1 = env.step(action)
 
 
-for results in [results1, results2, results3]:
-    sampled_run = results[0]
+for results in [results1]:
+    sampled_run = results
     single_run_reward = sampled_run['reward']
     single_run_cumulated_reward_counter = 0
     single_run_cumulated_reward = []
 
-    all_rewards = [results[a]['reward'] for a in range(num_runs)]
+    all_rewards = [results['reward'] for a in range(num_runs)]
     averaged_reward = np.sum(np.asarray(all_rewards), axis=0) / num_runs
     cumulated_average_reward = []
     cumulated_reward = 0
 
-    all_expected_rewards = [results[a]['expected_reward'] for a in range(num_runs)]
+    all_expected_rewards = [results['expected_reward'] for a in range(num_runs)]
     averaged_all_expected_rewards = np.sum(np.asarray(all_expected_rewards), axis=0) / num_runs
     cumulated_expected_rewards_counter = 0
     cumulated_expected_rewards = []
 
-    all_optimal = [results[a]['optimal_mean'] for a in range(num_runs)]
+    all_optimal = [results['optimal_mean'] for a in range(num_runs)]
     averaged_optimal = np.sum(np.asarray(all_optimal), axis=0) / num_runs
     cumulated_optimal = [averaged_optimal*n for n in range(horizon)]
 

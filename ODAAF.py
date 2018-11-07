@@ -14,8 +14,15 @@ class OdaafExpectedDelay():
         self.iteration = 0
         self.step = 0
         self.phase_count = 0
+        self.phase_iteration_num = 0
 
         self.env = env
+
+        self.last_arm_pulled = 0
+        self.last_arm_pulls = 0
+        self.startingStep2NewPhase = True
+        self.step2_remaining_iterations = 0
+        self.step2_arm_iterations = 0
 
         # Hyperparameters
         self.tolerance = tolerance
@@ -40,40 +47,77 @@ class OdaafExpectedDelay():
                                                       6 * self.tolerance * self.phase_count * self.expected_delay)) ** 2
         return nm
 
-    def play(self):
-        # be lazy for now
-        while self.iteration < self.horizon:
+    def play(self, reward):
 
-            if self.step == 0:
-                hist = self.phase1()
+        action = -1
 
-            elif self.step == 1:
-                self.phase2()
+        # for each iteration, determine which step to do
+        if self.step == 0:
 
-            elif self.step == 2:
-                hist = self.phase3()
-        return hist
+            # attribute reward
+            self.phase1_pull_results[self.last_arm_pulled].append(reward)
 
-    def phase1(self):
+            # do phase 1
+            action = self.step0()
+
+        elif self.step == 1:  # Pretty sure this never happens
+
+            # attribute the last action from phase 1, then eliminate arms
+            self.phase1_pull_results[self.last_arm_pulled].append(reward)
+
+            # do phase 2
+            action = self.step1()
+
+        elif self.step == 2:
+
+            # do phase 3
+            action = self.step2()
+
+        # return the selected action
+        return action
+
+    def step0(self):
+        # make sure we aren't starting on an arm that is already eliminated
+        if self.eliminated_arms[self.last_arm_pulled] == 1:
+            self.last_arm_pulled = self.get_next_arm(self.last_arm_pulled + 1)
+
         # This is the phase to play the arms
-        for j in range(self.num_arms):
-            if self.eliminated_arms[j] == 1:
-                # arm has been eliminated, don't play it
-                continue
-            starting_i = self.iteration
-            while self.iteration - starting_i <= self.num_required_pulls_phase1 and self.iteration < self.horizon:
-                observation, reward, done, returned_hist = self.env.step(j)
-                self.regret_upper_bound.append(self.regret_bound())
-                self.phase1_pull_results[j].append(reward)
-                self.total_rewards[j] = reward
-                self.cumulative_reward += reward
-                self.cumulative_reward_list[self.iteration] = self.cumulative_reward
-                self.iteration += 1
-        self.step = 1
-        returned_hist['regret_bound'] = self.regret_upper_bound
-        return returned_hist
+        required_pulls = (len(self.eliminated_arms) - sum(self.eliminated_arms)) * self.num_required_pulls_phase1
 
-    def phase2(self):
+        # if we are still in this phase
+        if self.phase_iteration_num <= required_pulls:
+
+            # if we still need to pull the previous arm
+            if self.last_arm_pulls <= self.num_required_pulls_phase1:
+                self.last_arm_pulls += 1
+                self.phase_iteration_num += 1
+                return self.last_arm_pulled
+
+            # we need to pull the next arm
+            else:
+
+                # if we are out of arms, move to step 2
+                if self.get_next_arm(self.last_arm_pulled + 1) < 0:
+                    self.step = 1
+                    self.last_arm_pulled = 0
+                    self.last_arm_pulls = 0
+                    self.phase_iteration_num += 1
+                    return self.step1()
+
+                # if we are not out of arms, pull the next one
+                else:
+                    # we have more arms to pull for phase 1
+                    self.last_arm_pulled = self.get_next_arm(self.last_arm_pulled + 1)
+                    self.last_arm_pulls = 0
+                    self.phase_iteration_num += 1
+                    return self.last_arm_pulled
+        # if we are no longer in step 1, then increment step counter and move to step 2
+        else:
+            self.step = 1
+            return self.step1()
+
+    def step1(self):
+        # need to determine what arms to eliminate
         for j in range(self.num_arms):
             if self.eliminated_arms[j] != 1:
                 self.post_phase1_arm_averages[j] = sum(self.phase1_pull_results[j]) / len(self.phase1_pull_results[j])
@@ -85,39 +129,51 @@ class OdaafExpectedDelay():
             if self.eliminated_arms[j] != 1:
                 if self.post_phase1_arm_averages[j] + self.tolerance < max_arm_avg:
                     self.eliminated_arms[j] = 1
+
+        # increment step
         self.step = 2
+        return self.step2()
 
-    def phase3(self):
-        for j in range(self.num_arms):
-            if self.eliminated_arms[j] != 1:
-                # play the arm, otherwise it has been eliminated
-                for k in range(self.bridge_period):
-                    if self.iteration < self.horizon:
-                        _, reward, _, returned_hist = self.env.step(j)
-                        self.regret_upper_bound.append(self.regret_bound())
-                        self.total_rewards[self.iteration] = reward
-                        self.cumulative_reward += reward
-                        self.cumulative_reward_list[self.iteration] = self.cumulative_reward
-                        self.iteration += 1
-                    else:
-                        self.step = 0
-                        self.phase_count += 1
-                        break
-        self.step = 0
-        self.phase_count += 1
-        self.post_phase1_arm_averages = [0 for _ in range(self.num_arms)]
-        self.phase1_pull_results = [[] for _ in range(self.num_arms)]
-        self.tolerance = self.tolerance / 2.0
-        self.tolerance_list.append(self.tolerance)
-        self.num_required_pulls_phase1 = self.setnm()
-        returned_hist['regret_bound'] = self.regret_upper_bound
-        return returned_hist
+    def step2(self):
 
-    def regret_bound(self):
-        expected_regret = np.log(self.horizon * (self.tolerance**2)) / self.tolerance + \
-                           np.log(1/self.tolerance) * self.expected_delay
-        return expected_regret
+        # Determine how many iterations we need in the bridge period
+        if self.startingStep2NewPhase:
+            self.step2_remaining_iterations = self.bridge_period * \
+                                              (len(self.eliminated_arms) - sum(self.eliminated_arms))
+            self.startingStep2NewPhase = False
+            self.step2_iterations = 0
 
+        # Determine if we are still in the bridge period
+        if self.step2_remaining_iterations <= 0:
+            # start over
+            self.last_arm_pulled = 0
+            self.last_arm_pulls = 0
+            self.phase_iteration_num = 0
+            self.phase1_pull_results = [[] for _ in range(self.num_arms)]
+            return self.step0()
+
+        # continue pulling the last arm
+        if self.step2_arm_iterations < self.bridge_period:
+            self.last_arm_pulls += 1
+            self.phase_iteration_num += 1
+            return self.last_arm_pulled
+
+        # get the next arm
+        else:
+            self.last_arm_pulls = 0
+            self.last_arm_pulled = self.get_next_arm(self.last_arm_pulled + 1)
+            self.phase_iteration_num += 1
+            return self.last_arm_pulled
+
+    def get_next_arm(self, arm):
+        if arm >= self.num_arms:
+            return -1
+
+        if self.eliminated_arms[arm] == 1:
+            # The arm is eliminated, get next arm
+            self.get_next_arm(arm + 1)
+        else:
+            return arm
 
 
 class OdaafExpectedBoundedDelay():
