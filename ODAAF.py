@@ -11,6 +11,10 @@ class Odaaf:
         self.phase_count = 0
         self.phase_iteration_num = 0
 
+        self.starting = True
+        self.best_arm = 0
+        self.restarting = True
+
         self.last_arm_pulled = 0
         self.last_arm_pulls = 0
         self.startingStep2NewPhase = True
@@ -36,9 +40,9 @@ class Odaaf:
         self.num_required_pulls_phase1 = self.setnm()
 
     def setnm(self):
-        raise NotImplementedError('subclasses must override foo()!')
+        raise NotImplementedError('subclasses must override setnm()!')
 
-    def play(self, reward):
+    def play(self, reward, **kwargs):
 
         action = -1
 
@@ -46,7 +50,14 @@ class Odaaf:
         if self.step == 0:
 
             # attribute reward
-            self.phase1_pull_results[self.last_arm_pulled].append(reward)
+            if self.starting:
+                self.starting = False
+            else:
+                self.phase1_pull_results[self.last_arm_pulled].append(reward)
+
+            if self.restarting:
+                self.restarting = False
+                self.last_arm_pulled = 0
 
             # do phase 1
             action = self.step0()
@@ -76,7 +87,7 @@ class Odaaf:
         required_pulls = (len(self.eliminated_arms) - sum(self.eliminated_arms)) * self.num_required_pulls_phase1
 
         # if we are still in this phase
-        if self.phase_iteration_num <= required_pulls:
+        if self.phase_iteration_num < required_pulls:
 
             # if we still need to pull the previous arm
             if self.last_arm_pulls <= self.num_required_pulls_phase1:
@@ -90,9 +101,9 @@ class Odaaf:
                 # if we are out of arms, move to step 2
                 if self.get_next_arm(self.last_arm_pulled + 1) < 0:
                     self.step = 1
-                    self.last_arm_pulled = 0
+                    self.last_arm_pulled = self.get_next_arm(0)
                     self.last_arm_pulls = 0
-                    self.phase_iteration_num += 1
+                    self.phase_iteration_num = 0
                     return self.step1()
 
                 # if we are not out of arms, pull the next one
@@ -115,6 +126,7 @@ class Odaaf:
 
         # Eliminate sub-optimal arms
         max_arm_avg = max(self.post_phase1_arm_averages)
+        self.best_arm = np.argmax(np.asarray(self.post_phase1_arm_averages))
 
         for j in range(self.num_arms):
             if self.eliminated_arms[j] != 1:
@@ -129,32 +141,27 @@ class Odaaf:
 
         # Determine how many iterations we need in the bridge period
         if self.startingStep2NewPhase:
-            self.step2_remaining_iterations = self.bridge_period * \
-                                              (len(self.eliminated_arms) - sum(self.eliminated_arms))
+            self.step2_remaining_iterations = self.bridge_period
             self.startingStep2NewPhase = False
-            self.step2_iterations = 0
 
         # Determine if we are still in the bridge period
         if self.step2_remaining_iterations <= 0:
             # start over
-            self.last_arm_pulled = 0
+            self.last_arm_pulled = self.best_arm
             self.last_arm_pulls = 0
             self.phase_iteration_num = 0
             self.phase1_pull_results = [[] for _ in range(self.num_arms)]
-            return self.step0()
+            self.tolerance = self.tolerance / 2
+            self.num_required_pulls_phase1 = self.setnm()
+            self.startingStep2NewPhase = True
+            self.step = 0
+            self.restarting = True
+            return self.best_arm
 
-        # continue pulling the last arm
-        if self.step2_arm_iterations < self.bridge_period:
-            self.last_arm_pulls += 1
-            self.phase_iteration_num += 1
-            return self.last_arm_pulled
-
-        # get the next arm
-        else:
-            self.last_arm_pulls = 0
-            self.last_arm_pulled = self.get_next_arm(self.last_arm_pulled + 1)
-            self.phase_iteration_num += 1
-            return self.last_arm_pulled
+        # pull the best arm
+        self.step2_remaining_iterations -= 1
+        self.last_arm_pulled = self.best_arm
+        return self.last_arm_pulled
 
     def get_next_arm(self, arm):
         if arm >= self.num_arms:
@@ -165,14 +172,22 @@ class Odaaf:
             self.get_next_arm(arm + 1)
         else:
             return arm
+        return arm
 
 
 class OdaafExpectedDelay(Odaaf):
     def setnm(self):
+        term1 = np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)))
+        term2 = np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
+                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
+                                                      6 * self.tolerance * (self.phase_count + 1) * self.expected_delay)
+        term3 = (1.0 / (self.tolerance ** 2)) * (term1 + term2) ** 2
+        term4 = (1.0 / (self.tolerance ** 2)) * (term1) ** 2
+        term5 = (1.0 / (self.tolerance ** 2)) * (term2) ** 2
         nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
                                               np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
                                                       self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      6 * self.tolerance * self.phase_count * self.expected_delay)) ** 2
+                                                      6 * self.tolerance * (self.phase_count + 1) * self.expected_delay)) ** 2
         return nm
 
 
@@ -185,7 +200,7 @@ class OdaafExpectedBoundedDelay(Odaaf):
         d_min_comparison = ((1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
                                               np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
                                                       self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      6 * self.tolerance * self.phase_count * self.expected_delay)) ** 2
+                                                      6 * self.tolerance * (self.phase_count + 1) * self.expected_delay)) ** 2
                             ) / (self.phase_count + 1)
 
         d_twidel = self.delay_upper_bound if self.delay_upper_bound <= d_min_comparison else d_min_comparison

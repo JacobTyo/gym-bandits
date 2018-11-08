@@ -3,10 +3,14 @@ import gym_bandits
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
-import seaborn as sns
+# import seaborn as sns
+from multiprocessing import Pool
+from tqdm import tqdm
 from ucb import Ucb
 from delayed_ucb import Delayed_Ucb
 import ODAAF
+import Hedger
+import functools
 
 
 def run(args, alg):
@@ -15,7 +19,8 @@ def run(args, alg):
     results = []
     env = gym.make(args.gym + "-v0")
 
-    for run in range(args.repetitions):
+    print("Launching " + alg)
+    for run in range(args.repetitions):  # tqdm(range(args.repetitions)):
         env.reset()
 
         # New algorithms go here
@@ -24,6 +29,33 @@ def run(args, alg):
             agent = Ucb(env.action_space.n, args)
         elif alg == "delayed_ucb":
             agent = Delayed_Ucb(env.action_space.n, args)
+        elif alg == "odaaf_ed":
+            agent = ODAAF.OdaafExpectedDelay(horizon=horizon,
+                                             num_arms=env.action_space.n,
+                                             tolerance=0.5,
+                                             expected_delay=500,
+                                             bridge_period=1000)
+        elif alg == "odaaf_ebd":
+            agent = ODAAF.OdaafExpectedBoundedDelay(horizon=horizon,
+                                                    num_arms=env.action_space.n,
+                                                    tolerance=0.5,
+                                                    expected_delay=500,
+                                                    delay_upper_bound=1000,
+                                                    bridge_period=1000)
+        elif alg == "odaaf_bdev":
+            agent = ODAAF.OdaafBoundedDelayExpectationVariance(horizon=horizon,
+                                                               num_arms=env.action_space.n,
+                                                               tolerance=0.5,
+                                                               expected_delay=500,
+                                                               delay_upper_bound=1000,
+                                                               delay_variance=500,
+                                                               bridge_period=1000)
+        elif alg == "hedger":
+            agent = Hedger.Hedger(horizon=horizon,
+                                  num_arms=env.action_space.n,
+                                  tolerance=0.5,
+                                  expected_delay=500,
+                                  bridge_period=1000)
 
         # Experiment
         action = agent.play(None, non_anon_reward=[])
@@ -43,86 +75,44 @@ def main():
     parser.add_argument('--horizon', type=int, help='length of experiment')
     parser.add_argument('--repetitions', type=int, help='Number of times to run experiment')
     parser.add_argument('--ucb_delta', type=float, help='ucb error probability')
-    #parser.add_argument('--alg', type=str, choices=["ucb", "delayed_ucb"], help='bandit algorithm to run')
+    # parser.add_argument('--alg', type=str, choices=["ucb", "delayed_ucb"], help='bandit algorithm to run')
     parser.add_argument('--gym', type=str, choices=['BanditTenArmedRandomFixed',
-                'BanditTenArmedRandomRandom',
-                'BanditTenArmedGaussian',
-                'BanditTenArmedUniformDistributedReward',
-                'BanditTwoArmedDeterministicFixed',
-                'BanditTwoArmedHighHighFixed',
-                'BanditTwoArmedHighLowFixed',
-                'BanditTwoArmedLowLowFixed',
-                'AnonymousDelayedBanditTwoArmedDeterministic',
-                'AnonymousDelayedBanditTwoArmStochasticReward',
-                'AnonymousDelayedBanditTwoArmedStochasticDelay',
-                'AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward',
-                'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward',
-                'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward1',
-                'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2'
-                'AdaBanditsBaseline'], help='bandit environment')
+                                                    'BanditTenArmedRandomRandom',
+                                                    'BanditTenArmedGaussian',
+                                                    'BanditTenArmedUniformDistributedReward',
+                                                    'BanditTwoArmedDeterministicFixed',
+                                                    'BanditTwoArmedHighHighFixed',
+                                                    'BanditTwoArmedHighLowFixed',
+                                                    'BanditTwoArmedLowLowFixed',
+                                                    'AnonymousDelayedBanditTwoArmedDeterministic',
+                                                    'AnonymousDelayedBanditTwoArmStochasticReward',
+                                                    'AnonymousDelayedBanditTwoArmedStochasticDelay',
+                                                    'AnonymousDelayedBanditTwoArmedStochasticDelayStochasticReward',
+                                                    'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward',
+                                                    'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward1',
+                                                    'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2',
+                                                    'AdaBanditsBaseline'], help='bandit environment')
     args = parser.parse_args()
     horizon = args.horizon
 
-    algs = ["ucb", "delayed_ucb"]
+    pool = Pool(4)
+
+    algs = ["ucb", "delayed_ucb", "odaaf_ed", "hedger"]  # "odaaf_ebd", "odaaf_bdev",
+    output = pool.map(functools.partial(run, (args)), algs)
+
+    i = 0
     results = {}
     for alg in algs:
-        results[alg] = run(args, alg)
+        results[alg] = output[i]
+        i += 1
 
     tempenv = gym.make(args.gym + "-v0")
     tempenv.reset()
     max_mean = tempenv.step(0)[-1]["optimal_mean"]
     # Results
 
-    ################### TEMP hack for Jake's odaaf ####################
-    env = gym.make(args.gym + "-v0")
-    temp = []
-    for _ in range(args.repetitions):
-        env.reset()
-        odaaf = ODAAF.OdaafExpectedDelay(horizon=horizon,
-                                          num_arms=env.action_space.n,
-                                          tolerance=.5,
-                                          expected_delay=5,
-                                          bridge_period=25)
-        temp.append(odaaf.play())
-
-    temp = np.asarray([info["expected_reward"] for info in temp])
-    results["odaaf_ed"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
-
-    temp = []
-    for _ in range(args.repetitions):
-        env.reset()
-
-        odaaf = ODAAF.OdaafExpectedBoundedDelay(horizon=horizon,
-                                                num_arms=env.action_space.n,
-                                                tolerance=.5,
-                                                expected_delay=5,
-                                                delay_upper_bound=30,
-                                                bridge_period=25)
-        temp.append(odaaf.play())
-
-    temp = np.asarray([info["expected_reward"] for info in temp])
-    results["odaaf_ebd"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
-    ######### End hack ##################
-
-    temp = []
-    for _ in range(args.repetitions):
-        env.reset()
-        odaaf = ODAAF.OdaafBoundedDelayExpectationVariance(horizon=horizon,
-                                                            num_arms=env.action_space.n,
-                                                            tolerance=.5,
-                                                            expected_delay=5,
-                                                            delay_upper_bound=30,
-                                                            delay_variance=5,
-                                                            bridge_period=25)
-        temp.append(odaaf.play())
-
-    temp = np.asarray([info["expected_reward"] for info in temp])
-    results["odaaf_bdev"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
-
     plt.figure(figsize=(15, 7.5))
-    for alg in algs + ["odaaf_ed",
-                       "odaaf_ebd",
-                       "odaaf_bdev"]:
+    for alg in algs:  # + ["odaaf_ed", "odaaf_ebd", "odaaf_bdev"]:
         mean = results[alg]["mean"]
         std = results[alg]["std"]
         total_regret = (max_mean * horizon) - np.sum(mean)
@@ -145,3 +135,57 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+# ======================================================================================
+# trash I hope
+#
+#     ################### TEMP hack for Jake's odaaf ####################
+#     env = gym.make(args.gym + "-v0")
+#     temp = []
+#     for _ in range(args.repetitions):
+#         env.reset()
+#         odaaf = ODAAF.OdaafExpectedDelay(horizon=horizon,
+#                                           num_arms=env.action_space.n,
+#                                           tolerance=.5,
+#                                           expected_delay=5,
+#                                           bridge_period=25)
+#         temp.append(odaaf.play())
+#
+#     temp = np.asarray([info["expected_reward"] for info in temp])
+#     results["odaaf_ed"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
+#
+#     temp = []
+#     for _ in range(args.repetitions):
+#         env.reset()
+#
+#         odaaf = ODAAF.OdaafExpectedBoundedDelay(horizon=horizon,
+#                                                 num_arms=env.action_space.n,
+#                                                 tolerance=.5,
+#                                                 expected_delay=5,
+#                                                 delay_upper_bound=30,
+#                                                 bridge_period=25)
+#         temp.append(odaaf.play())
+#
+#     temp = np.asarray([info["expected_reward"] for info in temp])
+#     results["odaaf_ebd"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
+#     ######### End hack ##################
+#
+#     temp = []
+#     for _ in range(args.repetitions):
+#         env.reset()
+#         odaaf = ODAAF.OdaafBoundedDelayExpectationVariance(horizon=horizon,
+#                                                             num_arms=env.action_space.n,
+#                                                             tolerance=.5,
+#                                                             expected_delay=5,
+#                                                             delay_upper_bound=30,
+#                                                             delay_variance=5,
+#                                                             bridge_period=25)
+#         temp.append(odaaf.play())
+#
+#     temp = np.asarray([info["expected_reward"] for info in temp])
+#     results["odaaf_bdev"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}

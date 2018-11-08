@@ -2,26 +2,24 @@ import numpy as np
 
 
 class Hedger:
-    def __init__(self, horizon, num_arms, tolerance, expected_delay, delay_upper_bound, delay_variance,
-                 bridge_period=25):
-
-        self.k = 100
-        self.n = 20
-
-        # test with high expected delay 0 use that as k then set n to be k/10 or something 
+    def __init__(self, horizon, num_arms, tolerance, expected_delay, bridge_period=25):
 
         # Class variables
         self.horizon = horizon
         self.iteration = 0
         self.step = 0
-        self.phase_count = 0
-        self.phase_iteration_num = 0
 
-        self.last_arm_pulled = 0
-        self.last_arm_pulls = 0
-        self.startingStep2NewPhase = True
-        self.step2_remaining_iterations = 0
-        self.step2_arm_iterations = 0
+        self.received_rewards = [[] for _ in range(num_arms)]
+        self.selected_arm = 0
+        self.previously_selected_arm = 0
+        self.phase_count = 1
+        self.num_arms = num_arms
+
+        self.estimated_arm_averages = [0 for _ in range(num_arms)]
+        self.is_arm_estimated = [False for _ in range(num_arms)]
+        self.is_arm_eliminated = [False for _ in range(num_arms)]
+
+        self.hedging_iterations_this_arm = 0
 
         # Hyperparameters
         self.tolerance = tolerance
@@ -30,150 +28,123 @@ class Hedger:
         self.expected_delay = expected_delay
         self.bridge_period = bridge_period
 
-        self.eliminated_arms = [0 for _ in range(num_arms)]
-        self.phase1_pull_results = [[] for _ in range(num_arms)]
-        self.total_rewards = [0 for _ in range(horizon)]
-        self.cumulative_reward = 0
-        self.cumulative_reward_list = [0 for _ in range(horizon)]
-        self.post_phase1_arm_averages = [0 for _ in range(num_arms)]
-
-        self.best_arm_rewards_so_far = [0 for _ in range(horizon)]
-
-        self.num_required_pulls_phase1 = self.setnm()
+        self.nm = self.setnm()
+        self.little_nm = self.set_little_nm()
 
     def setnm(self):
         nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
                                               np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
                                                       self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      4 * self.tolerance * (self.expected_delay +
-                                                                            2 * self.delay_variance))) ** 2
+                                                      6 * self.tolerance * (
+                                                                  self.phase_count) * self.expected_delay)) ** 2
+        self.phase_count += 1
+        return int(nm)
 
-        return nm
+    def set_little_nm(self):
+        term2 = np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
+                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
+                                                      6 * self.tolerance * (self.phase_count + 1) * self.expected_delay)
+        term5 = (1.0 / (self.tolerance ** 2)) * term2 ** 2
 
-    def play(self, reward):
+        return self.nm - int(term5)
 
-        action = -1
+    def play(self, reward, **kwargs):
 
-        # for each iteration, determine which step to do
-        if self.step == 0:
+        test = 2 * int(self.nm)
+        # record reward from previous action
+        if self.iteration > 0:
+            self.received_rewards[self.selected_arm].append(reward)
 
-            # attribute reward
-            self.phase1_pull_results[self.last_arm_pulled].append(reward)
-
-            # do phase 1
+        # for the first two arms, just pull them as odaaf
+        if self.iteration < 2 * self.nm:
+            # just pull the first two arms nm times
             action = self.step0()
 
-        elif self.step == 1:  # Pretty sure this never happens
+        # bridge period
+        elif self.iteration == 2 * self.nm:
+            self.calculate_arm_averages_normal()
+            action = self.bridge_step()
 
-            # attribute the last action from phase 1, then eliminate arms
-            self.phase1_pull_results[self.last_arm_pulled].append(reward)
+        elif self.iteration < 2 * self.nm + self.bridge_period:
+            action = self.bridge_step()
 
-            # do phase 2
-            action = self.step1()
+        # now we need to systematically estimate the averages for the unpulled arms
+        elif False in self.is_arm_estimated:
+            # there still exists some arms that are not estimated
+            action = self.estimate_with_hedging()
 
-        elif self.step == 2:
+        # else just pull the best arm
+        else:
+            action = self.get_best_arm()
 
-            # do phase 3
-            action = self.step2()
-
-        # return the selected action
+        self.iteration += 1
         return action
 
     def step0(self):
-        # make sure we aren't starting on an arm that is already eliminated
-        if self.eliminated_arms[self.last_arm_pulled] == 1:
-            self.last_arm_pulled = self.get_next_arm(self.last_arm_pulled + 1)
 
-        # This is the phase to play the arms
-        required_pulls = (len(self.eliminated_arms) - sum(self.eliminated_arms)) * self.num_required_pulls_phase1
+        # pull the first arm nm times
+        if self.iteration < self.nm:
+            self.selected_arm = 0
+            return self.selected_arm
 
-        # if we are still in this phase
-        if self.phase_iteration_num <= required_pulls:
+        # pull the second arm nm times
+        elif self.iteration < 2 * self.nm:
+            self.selected_arm = 1
+            return self.selected_arm
 
-            # if we still need to pull the previous arm
-            if self.last_arm_pulls <= self.num_required_pulls_phase1:
-                self.last_arm_pulls += 1
-                self.phase_iteration_num += 1
-                return self.last_arm_pulled
+    def bridge_step(self):
+        # just pull max arm so far
+        return self.get_best_arm()
 
-            # we need to pull the next arm
-            else:
+    def estimate_with_hedging(self):
+        arm_to_estimate = -1
+        for i in range(len(self.is_arm_estimated)):
+            if not self.is_arm_estimated:
+                arm_to_estimate = i
 
-                # if we are out of arms, move to step 2
-                if self.get_next_arm(self.last_arm_pulled + 1) < 0:
-                    self.step = 1
-                    self.last_arm_pulled = 0
-                    self.last_arm_pulls = 0
-                    self.phase_iteration_num += 1
-                    return self.step1()
+        # should never be here
+        if arm_to_estimate == -1:
+            self.selected_arm = self.get_best_arm()
+            return self.selected_arm
 
-                # if we are not out of arms, pull the next one
-                else:
-                    # we have more arms to pull for phase 1
-                    self.last_arm_pulled = self.get_next_arm(self.last_arm_pulled + 1)
-                    self.last_arm_pulls = 0
-                    self.phase_iteration_num += 1
-                    return self.last_arm_pulled
-        # if we are no longer in step 1, then increment step counter and move to step 2
-        else:
-            self.step = 1
-            return self.step1()
+        self.selected_arm = self.get_best_arm()
 
-    def step1(self):
-        # need to determine what arms to eliminate
-        for j in range(self.num_arms):
-            if self.eliminated_arms[j] != 1:
-                self.post_phase1_arm_averages[j] = sum(self.phase1_pull_results[j]) / len(self.phase1_pull_results[j])
+        # estimate arm i - pull i little nm times
+        if self.hedging_iterations_this_arm < self.little_nm:
+            self.previously_selected_arm = arm_to_estimate
+            self.selected_arm = arm_to_estimate
 
-        # Eliminate sub-optimal arms
-        max_arm_avg = max(self.post_phase1_arm_averages)
+        # if we have pulled enough times, calculate new estimate
+        elif self.hedging_iterations_this_arm >= self.nm:
+            self.calculated_arm_averages_mixed()
+            self.hedging_iterations_this_arm = 0
+            return self.selected_arm
 
-        for j in range(self.num_arms):
-            if self.eliminated_arms[j] != 1:
-                if self.post_phase1_arm_averages[j] + self.tolerance < max_arm_avg:
-                    self.eliminated_arms[j] = 1
+        self.hedging_iterations_this_arm += 1
 
-        # increment step
-        self.step = 2
-        return self.step2()
+        return self.selected_arm
 
-    def step2(self):
+    def calculate_arm_averages_normal(self):
+        # for each arm, calculate the average reward
+        for i in range(self.num_arms):
+            num_rewards_received = len(self.received_rewards[i])
+            if num_rewards_received > 0:
+                self.estimated_arm_averages[i] = sum(self.received_rewards[i]) / len(self.received_rewards[i])
+                self.is_arm_estimated[i] = True
 
-        # Determine how many iterations we need in the bridge period
-        if self.startingStep2NewPhase:
-            self.step2_remaining_iterations = self.bridge_period * \
-                                              (len(self.eliminated_arms) - sum(self.eliminated_arms))
-            self.startingStep2NewPhase = False
-            self.step2_iterations = 0
+        # reset rewards buffers
+        self.received_rewards = [[] for _ in range(self.num_arms)]
 
-        # Determine if we are still in the bridge period
-        if self.step2_remaining_iterations <= 0:
-            # start over
-            self.last_arm_pulled = 0
-            self.last_arm_pulls = 0
-            self.phase_iteration_num = 0
-            self.phase1_pull_results = [[] for _ in range(self.num_arms)]
-            return self.step0()
+    def calculated_arm_averages_mixed(self):
+        # for the recently played arms, calculate the new average
+        self.estimated_arm_averages[self.previously_selected_arm] = (
+            sum(self.received_rewards[self.selected_arm] + sum(self.received_rewards[self.previously_selected_arm])) / (
+                    len(self.received_rewards[self.selected_arm]) +
+                    len(self.received_rewards[self.previously_selected_arm])) -
+            self.estimated_arm_averages[self.selected_arm])
 
-        # continue pulling the last arm
-        if self.step2_arm_iterations < self.bridge_period:
-            self.last_arm_pulls += 1
-            self.phase_iteration_num += 1
-            return self.last_arm_pulled
+        # Make sure to update the list of estimated arms
+        self.is_arm_estimated[self.previously_selected_arm] = True
 
-        # get the next arm
-        else:
-            self.last_arm_pulls = 0
-            self.last_arm_pulled = self.get_next_arm(self.last_arm_pulled + 1)
-            self.phase_iteration_num += 1
-            return self.last_arm_pulled
-
-    def get_next_arm(self, arm):
-        if arm >= self.num_arms:
-            return -1
-
-        if self.eliminated_arms[arm] == 1:
-            # The arm is eliminated, get next arm
-            self.get_next_arm(arm + 1)
-        else:
-            return arm
+    def get_best_arm(self):
+            return np.argmax(np.asarray(self.estimated_arm_averages))
