@@ -1,9 +1,8 @@
 import gym
-import gym_bandits
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-import ODAAF
+from algorithms import Hedger
 
 # Environment Initializations
 # env = gym.make("AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2-v0")
@@ -21,16 +20,16 @@ results1 = {}
 
 env.reset()
 
-Odaaf1 = ODAAF.OdaafExpectedDelay(horizon=horizon,
-                                  num_arms=env.action_space.n,
-                                  tolerance=5,
-                                  expected_delay=10,
-                                  bridge_period=25)
+hedger = Hedger.Hedger(horizon=horizon,
+                       num_arms=env.action_space.n,
+                       tolerance=5,
+                       expected_delay=100,
+                       bridge_period=25)
 
 reward = 0
 for z in tqdm(range(horizon)):
 
-    action = Odaaf1.play(reward)
+    action = hedger.play(reward)
     _, reward, _, results1 = env.step(action)
 
 

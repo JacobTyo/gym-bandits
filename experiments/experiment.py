@@ -1,15 +1,12 @@
 import gym
-import gym_bandits
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 # import seaborn as sns
 from multiprocessing import Pool
-from tqdm import tqdm
-from ucb import Ucb
-from delayed_ucb import Delayed_Ucb
-import ODAAF
-import Hedger
+from algorithms.ucb import Ucb
+from algorithms.delayed_ucb import Delayed_Ucb
+from algorithms import ODAAF, Hedger
 import functools
 
 
@@ -135,57 +132,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-# ======================================================================================
-# trash I hope
-#
-#     ################### TEMP hack for Jake's odaaf ####################
-#     env = gym.make(args.gym + "-v0")
-#     temp = []
-#     for _ in range(args.repetitions):
-#         env.reset()
-#         odaaf = ODAAF.OdaafExpectedDelay(horizon=horizon,
-#                                           num_arms=env.action_space.n,
-#                                           tolerance=.5,
-#                                           expected_delay=5,
-#                                           bridge_period=25)
-#         temp.append(odaaf.play())
-#
-#     temp = np.asarray([info["expected_reward"] for info in temp])
-#     results["odaaf_ed"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
-#
-#     temp = []
-#     for _ in range(args.repetitions):
-#         env.reset()
-#
-#         odaaf = ODAAF.OdaafExpectedBoundedDelay(horizon=horizon,
-#                                                 num_arms=env.action_space.n,
-#                                                 tolerance=.5,
-#                                                 expected_delay=5,
-#                                                 delay_upper_bound=30,
-#                                                 bridge_period=25)
-#         temp.append(odaaf.play())
-#
-#     temp = np.asarray([info["expected_reward"] for info in temp])
-#     results["odaaf_ebd"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
-#     ######### End hack ##################
-#
-#     temp = []
-#     for _ in range(args.repetitions):
-#         env.reset()
-#         odaaf = ODAAF.OdaafBoundedDelayExpectationVariance(horizon=horizon,
-#                                                             num_arms=env.action_space.n,
-#                                                             tolerance=.5,
-#                                                             expected_delay=5,
-#                                                             delay_upper_bound=30,
-#                                                             delay_variance=5,
-#                                                             bridge_period=25)
-#         temp.append(odaaf.play())
-#
-#     temp = np.asarray([info["expected_reward"] for info in temp])
-#     results["odaaf_bdev"] = {"mean": np.mean(temp, axis=0), "std": np.std(temp, axis=0)}
