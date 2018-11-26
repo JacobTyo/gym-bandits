@@ -177,17 +177,11 @@ class Odaaf:
 
 class OdaafExpectedDelay(Odaaf):
     def setnm(self):
-        term1 = np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)))
-        term2 = np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
-                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      6 * self.tolerance * (self.phase_count + 1) * self.expected_delay)
-        term3 = (1.0 / (self.tolerance ** 2)) * (term1 + term2) ** 2
-        term4 = (1.0 / (self.tolerance ** 2)) * (term1) ** 2
-        term5 = (1.0 / (self.tolerance ** 2)) * (term2) ** 2
         nm = (1.0 / (self.tolerance ** 2)) * (np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2))) +
                                               np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
                                                       self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      6 * self.tolerance * (self.phase_count + 1) * self.expected_delay)) ** 2
+                                                      6 * self.tolerance * (
+                                                                  self.phase_count + 1) * self.expected_delay)) ** 2
         return nm
 
 

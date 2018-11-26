@@ -316,16 +316,16 @@ class AdaBanditsBaseline_Optimistic(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
         p_dist = [1 for i in range(bandits)]
 
-        r_dist = [functools.partial(np.random.normal, 0.1, 2, 1),
-                  functools.partial(np.random.normal, .99, 2, 1),
-                  functools.partial(np.random.normal, 0.3, 2, 1),
-                  functools.partial(np.random.normal, 0.8, 2, 1),
-                  functools.partial(np.random.normal, 0.5, 2, 1),
-                  functools.partial(np.random.normal, 0.6, 2, 1),
-                  functools.partial(np.random.normal, 0.2, 2, 1),
-                  functools.partial(np.random.normal, 0.4, 2, 1),
-                  functools.partial(np.random.normal, 0.9, 2, 1),
-                  functools.partial(np.random.normal, 0.7, 2, 1)]
+        r_dist = [functools.partial(np.random.normal, 0.1, 0.01, 1),
+                  functools.partial(np.random.normal, .99, 0.01, 1),
+                  functools.partial(np.random.normal, 0.3, 0.01, 1),
+                  functools.partial(np.random.normal, 0.8, 0.01, 1),
+                  functools.partial(np.random.normal, 0.5, 0.01, 1),
+                  functools.partial(np.random.normal, 0.6, 0.01, 1),
+                  functools.partial(np.random.normal, 0.2, 0.01, 1),
+                  functools.partial(np.random.normal, 0.4, 0.01, 1),
+                  functools.partial(np.random.normal, 0.9, 0.01, 1),
+                  functools.partial(np.random.normal, 0.7, 0.01, 1)]
 
         self.means = [0.1, 0.99, 0.3, 0.8, 0.5, 0.6, 0.2, 0.4, 0.9, 0.7]
 
