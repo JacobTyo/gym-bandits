@@ -22,6 +22,8 @@ class PhasedHedger:
         self.is_arm_estimated = [False for _ in range(num_arms)]
         self.is_arm_eliminated = [False for _ in range(num_arms)]
 
+        self.previous_arm_averages = [0 for _ in range(num_arms)]
+
         self.hedging_iterations_this_arm = 0
 
         self.bridge_iterations = 0
@@ -60,7 +62,7 @@ class PhasedHedger:
             self.received_rewards[self.selected_arm].append(reward)
 
         if sum(self.is_arm_eliminated) >= 7:
-            self.selected_arm = self.get_best_arm()
+            self.selected_arm = np.argmax(np.asarray(self.previous_arm_averages))
             return self.selected_arm
 
         if self.step == 0:
@@ -127,12 +129,13 @@ class PhasedHedger:
             self.elimination_phase()
 
             self.received_rewards = [[] for _ in range(self.num_arms)]
+            self.previous_arm_averages = self.estimated_arm_averages
             self.estimated_arm_averages = [0 for _ in range(self.num_arms)]
 
         return self.selected_arm
 
     def elimination_phase(self):
-        for i in range(len(self.num_arms)):
+        for i in range(self.num_arms):
             if self.estimated_arm_averages[i] + self.tolerance < max(self.estimated_arm_averages):
                 self.is_arm_eliminated[i] = True
 

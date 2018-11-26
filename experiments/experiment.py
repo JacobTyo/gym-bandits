@@ -7,7 +7,7 @@ import argparse
 from multiprocessing import Pool
 from algorithms.ucb import Ucb
 from algorithms.delayed_ucb import Delayed_Ucb
-from algorithms import ODAAF, Hedger
+from algorithms import ODAAF, Hedger, phased_hedger
 import functools
 
 
@@ -30,30 +30,36 @@ def run(args, alg):
         elif alg == "odaaf_ed":
             agent = ODAAF.OdaafExpectedDelay(horizon=horizon,
                                              num_arms=env.action_space.n,
-                                             tolerance=0.5,
-                                             expected_delay=9,
-                                             bridge_period=15)
+                                             tolerance=args.tolerance,
+                                             expected_delay=args.expected_delay,
+                                             bridge_period=args.bridge_period)
         elif alg == "odaaf_ebd":
             agent = ODAAF.OdaafExpectedBoundedDelay(horizon=horizon,
                                                     num_arms=env.action_space.n,
-                                                    tolerance=0.5,
-                                                    expected_delay=500,
-                                                    delay_upper_bound=1000,
-                                                    bridge_period=1000)
+                                                    tolerance=args.tolerance,
+                                                    expected_delay=args.expected_delay,
+                                                    delay_upper_bound=args.delay_upper_bound,
+                                                    bridge_period=args.bridge_period)
         elif alg == "odaaf_bdev":
             agent = ODAAF.OdaafBoundedDelayExpectationVariance(horizon=horizon,
                                                                num_arms=env.action_space.n,
-                                                               tolerance=0.5,
-                                                               expected_delay=500,
-                                                               delay_upper_bound=1000,
-                                                               delay_variance=500,
-                                                               bridge_period=1000)
+                                                               tolerance=args.tolerance,
+                                                               expected_delay=args.expected_delay,
+                                                               delay_upper_bound=args.delay_upper_bound,
+                                                               delay_variance=args.expected_variance,
+                                                               bridge_period=args.bridge_period)
         elif alg == "hedger":
             agent = Hedger.Hedger(horizon=horizon,
                                   num_arms=env.action_space.n,
-                                  tolerance=0.5,
-                                  expected_delay=9,
-                                  bridge_period=15)
+                                  tolerance=args.tolerance,
+                                  expected_delay=args.expected_delay,
+                                  bridge_period=args.bridge_period)
+        elif alg == "hedger_phased":
+            agent = phased_hedger.PhasedHedger(horizon=horizon,
+                                               num_arms=env.action_space.n,
+                                               tolerance=args.tolerance,
+                                               expected_delay=args.expected_delay,
+                                               bridge_period=args.bridge_period)
 
         # Experiment
         action = agent.play(None, non_anon_reward=[])
@@ -73,6 +79,12 @@ def main():
     parser.add_argument('--horizon', type=int, help='length of experiment')
     parser.add_argument('--repetitions', type=int, help='Number of times to run experiment')
     parser.add_argument('--ucb_delta', type=float, help='ucb error probability')
+    parser.add_argument('--bridge_period', type=int, help='ucb error probability', default=40)
+    parser.add_argument('--expected_delay', type=int, help='ucb error probability', default=25)
+    parser.add_argument('--delay_upper_bound', type=int, help='ucb error probability', default=40)
+    parser.add_argument('--expected_variance', type=int, help='ucb error probability', default=5)
+    parser.add_argument('--tolerance', type=float, help='ucb error probability', default=0.5)
+
     # parser.add_argument('--alg', type=str, choices=["ucb", "delayed_ucb"], help='bandit algorithm to run')
     parser.add_argument('--gym', type=str, choices=['BanditTenArmedRandomFixed',
                                                     'BanditTenArmedRandomRandom',
@@ -89,13 +101,15 @@ def main():
                                                     'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward',
                                                     'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward1',
                                                     'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2',
-                                                    'AdaBanditsBaseline'], help='bandit environment')
+                                                    'AdaBanditsBaseline',
+                                                    'AdaBanditsOutliers',
+                                                    'AdaBanditsBaseline_Optimistic'], help='bandit environment')
     args = parser.parse_args()
     horizon = args.horizon
 
     pool = Pool(4)
 
-    algs = ["ucb", "delayed_ucb", "odaaf_ed", "hedger"]  # "odaaf_ebd", "odaaf_bdev",
+    algs = ["ucb", "delayed_ucb", "odaaf_ed", "hedger", "odaaf_ebd", "odaaf_bdev", "hedger_phased"]
     output = pool.map(functools.partial(run, (args)), algs)
 
     i = 0

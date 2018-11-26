@@ -16,6 +16,7 @@ from .anonymous_delayed_bandit import AnonymousDelayedBanditTenArmedStochasticDe
 from .anonymous_delayed_bandit import AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2
 from .anonymous_delayed_bandit import Chirag
 from .anonymous_delayed_bandit import AdaBanditsBaseline
+from .anonymous_delayed_bandit import AdaBanditsBaseline_Optimistic
 from .anonymous_delayed_bandit import AdaBanditsOutliers
 
 
@@ -35,6 +36,7 @@ environments = [['BanditTenArmedRandomFixed', 'v0'],
                 ['AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2', 'v0'],
                 ['Chirag', 'v0'],
                 ['AdaBanditsBaseline', 'v0'],
+                ['AdaBanditsBaseline_Optimistic', 'v0'],
                 ['AdaBanditsOutliers', 'v0']]
 
 
