@@ -1,4 +1,5 @@
 import gym
+import gym_bandits
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
@@ -30,8 +31,8 @@ def run(args, alg):
             agent = ODAAF.OdaafExpectedDelay(horizon=horizon,
                                              num_arms=env.action_space.n,
                                              tolerance=0.5,
-                                             expected_delay=500,
-                                             bridge_period=1000)
+                                             expected_delay=9,
+                                             bridge_period=15)
         elif alg == "odaaf_ebd":
             agent = ODAAF.OdaafExpectedBoundedDelay(horizon=horizon,
                                                     num_arms=env.action_space.n,
@@ -51,8 +52,8 @@ def run(args, alg):
             agent = Hedger.Hedger(horizon=horizon,
                                   num_arms=env.action_space.n,
                                   tolerance=0.5,
-                                  expected_delay=500,
-                                  bridge_period=1000)
+                                  expected_delay=9,
+                                  bridge_period=15)
 
         # Experiment
         action = agent.play(None, non_anon_reward=[])
@@ -120,6 +121,7 @@ def main():
 
     plt.xlabel("Step")
     plt.ylabel("Cumulative Regret")
+    plt.yscale("linear")
     plt.legend(loc='upper left')
     plt.show()
     # plot rewards

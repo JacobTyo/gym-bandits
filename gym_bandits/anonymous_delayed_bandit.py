@@ -292,16 +292,16 @@ class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
 
         self.means = [0.1, 0.99, 0.3, 0.8, 0.5, 0.6, 0.2, 0.4, 0.9, 0.7]
 
-        d_dist = [functools.partial(np.random.poisson, 800, 1),
-                  functools.partial(np.random.poisson, 300, 1),
-                  functools.partial(np.random.poisson, 400, 1),
-                  functools.partial(np.random.poisson, 700, 1),
-                  functools.partial(np.random.poisson, 200, 1),
-                  functools.partial(np.random.poisson, 100, 1),
-                  functools.partial(np.random.poisson, 700, 1),
-                  functools.partial(np.random.poisson, 900, 1),
-                  functools.partial(np.random.poisson, 200, 1),
-                  functools.partial(np.random.poisson, 500, 1)]
+        d_dist = [functools.partial(np.random.poisson, 8, 1),
+                  functools.partial(np.random.poisson, 3, 1),
+                  functools.partial(np.random.poisson, 4, 1),
+                  functools.partial(np.random.poisson, 7, 1),
+                  functools.partial(np.random.poisson, 2, 1),
+                  functools.partial(np.random.poisson, 1, 1),
+                  functools.partial(np.random.poisson, 7, 1),
+                  functools.partial(np.random.poisson, 9, 1),
+                  functools.partial(np.random.poisson, 2, 1),
+                  functools.partial(np.random.poisson, 5, 1)]
 
         c = list(zip(r_dist, self.means, d_dist))
 
