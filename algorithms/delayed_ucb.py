@@ -32,7 +32,10 @@ class Delayed_Ucb():
         elif not non_anon_reward:
             action = self.last_action
         else:
-            ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / self.S)
+            if 0 in self.S:
+                ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / self.S + 0.00001)
+            else:
+                ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / self.S)
             action = np.argmax(ucbs)
 
         self.last_action = action
