@@ -6,5 +6,5 @@ class randomActions():
     def __init__(self, arms):
         self.num_arms = arms
 
-    def play(self, **kwargs):
-        return np.random.randint(0, self.num_arms, 1)
+    def play(self, reward, **kwargs):
+        return np.random.randint(low=0, high=self.num_arms)

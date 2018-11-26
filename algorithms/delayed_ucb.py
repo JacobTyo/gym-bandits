@@ -33,7 +33,7 @@ class Delayed_Ucb():
             action = self.last_action
         else:
             if 0 in self.S:
-                ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / self.S + 0.00001)
+                ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / (self.S + 0.00001))
             else:
                 ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / self.S)
             action = np.argmax(ucbs)

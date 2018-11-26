@@ -303,11 +303,11 @@ class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
                   functools.partial(np.random.poisson, 2, 1),
                   functools.partial(np.random.poisson, 5, 1)]
 
-        # c = list(zip(r_dist, self.means, d_dist))
-        #
-        # random.shuffle(c)
-        #
-        # r_dist, self.means, d_dist = zip(*c)
+        c = list(zip(r_dist, self.means, d_dist))
+
+        random.shuffle(c)
+
+        r_dist, self.means, d_dist = zip(*c)
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
 
