@@ -105,7 +105,8 @@ def main():
                                                     'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2',
                                                     'AdaBanditsBaseline',
                                                     'AdaBanditsOutliers',
-                                                    'AdaBanditsBaseline_Optimistic'], help='bandit environment')
+                                                    'AdaBanditsBaseline_Optimistic',
+                                                    'AdaBanditsBaselineTrunc'], help='bandit environment')
     args = parser.parse_args()
     horizon = args.horizon
 
@@ -137,7 +138,7 @@ def main():
 
     plt.xlabel("Step")
     plt.ylabel("Cumulative Regret")
-    # plt.yscale("linear")
+    plt.yscale("linear")
     plt.legend(loc='upper left')
     plt.show()
     # plot rewards

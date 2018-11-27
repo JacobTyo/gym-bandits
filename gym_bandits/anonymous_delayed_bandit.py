@@ -5,6 +5,7 @@ from gym.utils import seeding
 from types import FunctionType
 import functools
 import random
+from scipy.stats import truncnorm
 
 
 class AnonymousDelayedBanditEnv(gym.Env):
@@ -86,7 +87,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
             else:
                 reward_from_this_pull = self.r_dist[arm]
 
-            if type(reward_from_this_pull) is not int or type(reward_from_this_pull) is not float:
+            if not np.isscalar(reward_from_this_pull):
                 reward_from_this_pull = reward_from_this_pull[0]
 
             # and what delay is associated with that reward?
@@ -279,6 +280,10 @@ class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
         p_dist = [1 for i in range(bandits)]
 
+        k=10
+        variance =.1
+        self.means = np.linspace()
+
         r_dist = [functools.partial(np.random.normal, 0.1, 0.01, 1),
                   functools.partial(np.random.normal, .99, 0.01, 1),
                   functools.partial(np.random.normal, 0.3, 0.01, 1),
@@ -381,6 +386,22 @@ class AdaBanditsOutliers(AnonymousDelayedBanditEnv):
 
         random.shuffle(c)
 
+        r_dist, self.means, d_dist = zip(*c)
+
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
+
+class AdaBanditsBaselineTrunc(AnonymousDelayedBanditEnv):
+    def __init__(self, bandits=10):
+        p_dist = [1 for i in range(bandits)]
+        v =0.1
+        trunc_stds = 2
+        self.means = np.linspace(trunc_stds * v, 1 - (trunc_stds * v), num=bandits)
+        r_dist = [functools.partial(truncnorm.rvs, -trunc_stds, trunc_stds, loc=m, scale=v) for m in self.means]
+        d_dist = [functools.partial(np.random.poisson, l, 1) for l in np.arange(1, bandits+1)]
+
+        random.shuffle(d_dist)
+        c = list(zip(r_dist, self.means, d_dist))
+        random.shuffle(c)
         r_dist, self.means, d_dist = zip(*c)
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
