@@ -5,7 +5,7 @@ class Delayed_Ucb():
         # number of arms
         self.k = k
         # ucb probability
-        self.delta = args.ucb_delta
+        # self.delta = args.ucb_delta
         # current timestep; completed steps
         self.t = 0
         # empirical mean estimates
@@ -33,9 +33,9 @@ class Delayed_Ucb():
             action = self.last_action
         else:
             if 0 in self.S:
-                ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / (self.S + 0.00001))
+                ucbs = self.means + np.sqrt((4 * np.log(self.t)) / (self.S + 0.00001))
             else:
-                ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / self.S)
+                ucbs = self.means + np.sqrt((4 * np.log(self.t)) / self.S)
             action = np.argmax(ucbs)
 
         self.last_action = action

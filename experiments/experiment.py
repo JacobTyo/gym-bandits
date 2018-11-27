@@ -80,7 +80,7 @@ def main():
     parser = argparse.ArgumentParser(description='DAAF bandits experiment')
     parser.add_argument('--horizon', type=int, help='length of experiment')
     parser.add_argument('--repetitions', type=int, help='Number of times to run experiment')
-    parser.add_argument('--ucb_delta', type=float, help='ucb error probability', default=0.01)
+    # parser.add_argument('--ucb_delta', type=float, help='ucb error probability', default=0.01)
     parser.add_argument('--bridge_period', type=int, help='ucb error probability', default=10)
     parser.add_argument('--expected_delay', type=int, help='ucb error probability', default=9)
     parser.add_argument('--delay_upper_bound', type=int, help='ucb error probability', default=10)

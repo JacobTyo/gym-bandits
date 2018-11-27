@@ -6,7 +6,7 @@ class Ucb():
         # number of arms
         self.k = k
         # ucb probability
-        self.delta = args.ucb_delta
+        # self.delta = args.ucb_delta
         # current timestep; completed steps
         self.t = 0
         # empirical mean estimates
@@ -30,7 +30,7 @@ class Ucb():
         if self.t < self.k:
             action = self.t
         else:
-            ucbs = self.means + np.sqrt((2 * np.log(1 / self.delta)) / self.T)
+            ucbs = self.means + np.sqrt((4 * np.log(self.t)) / self.T)
             action = np.argmax(ucbs)
 
         self.last_action = action
