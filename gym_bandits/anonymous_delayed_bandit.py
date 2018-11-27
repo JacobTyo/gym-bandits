@@ -280,10 +280,6 @@ class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
         p_dist = [1 for i in range(bandits)]
 
-        k=10
-        variance =.1
-        self.means = np.linspace()
-
         r_dist = [functools.partial(np.random.normal, 0.1, 0.01, 1),
                   functools.partial(np.random.normal, .99, 0.01, 1),
                   functools.partial(np.random.normal, 0.3, 0.01, 1),
