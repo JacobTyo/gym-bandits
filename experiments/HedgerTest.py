@@ -65,7 +65,7 @@ for results in [results1]:
         single_run_cumulated_reward_counter += single_run_reward[i]
         single_run_cumulated_reward.append(single_run_cumulated_reward_counter)
 
-        #expected rewards
+        # expected rewards
         cumulated_expected_rewards_counter += averaged_all_expected_rewards[i]
         cumulated_expected_rewards.append(cumulated_expected_rewards_counter)
 

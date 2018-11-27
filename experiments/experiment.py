@@ -9,6 +9,7 @@ from algorithms.ucb import Ucb
 from algorithms.delayed_ucb import Delayed_Ucb
 from algorithms import ODAAF, Hedger, phased_hedger, random_actions
 import functools
+import random
 
 
 def run(args, alg):
@@ -61,7 +62,7 @@ def run(args, alg):
                                                expected_delay=args.expected_delay,
                                                bridge_period=args.bridge_period)
         elif alg == "random_actions":
-            agent = random_actions.randomActions(10)
+            agent = random_actions.randomActions(env.action_space.n)
 
         # Experiment
         action = agent.play(None, non_anon_reward=[])
@@ -76,7 +77,12 @@ def run(args, alg):
     std_expected_rewards = np.std(expected_rewards, axis=0)
     return {"mean": mean_expected_rewards, "std": std_expected_rewards}
 
+
 def main():
+
+    np.random.seed(1)
+    random.seed(1)
+
     parser = argparse.ArgumentParser(description='DAAF bandits experiment')
     parser.add_argument('--horizon', type=int, help='length of experiment')
     parser.add_argument('--repetitions', type=int, help='Number of times to run experiment')
@@ -112,8 +118,13 @@ def main():
 
     pool = Pool(4)
 
-    algs = ["ucb", "delayed_ucb", "odaaf_ed", "hedger", "hedger_phased", "random_actions"]  # "odaaf_ebd", "odaaf_bdev",
+    # algs = ["random_actions", "ucb", "delayed_ucb", "odaaf_ed", "hedger", "hedger_phased"]  # "odaaf_ebd", "odaaf_bdev",
+    algs = ["random_actions", "hedger_phased"]
     output = pool.map(functools.partial(run, (args)), algs)
+
+    # output = {}
+    # for alg in algs:
+    #     output[alg] = run(args, alg)
 
     i = 0
     results = {}
@@ -148,6 +159,7 @@ def main():
     # plt.ylabel("reward")
     # plt.show()
     # plt.figure()
+
 
 if __name__ == "__main__":
     main()

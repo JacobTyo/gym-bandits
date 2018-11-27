@@ -280,29 +280,29 @@ class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
         p_dist = [1 for i in range(bandits)]
 
-        r_dist = [functools.partial(np.random.normal, 0.1, 0.01, 1),
-                  functools.partial(np.random.normal, .99, 0.01, 1),
-                  functools.partial(np.random.normal, 0.3, 0.01, 1),
-                  functools.partial(np.random.normal, 0.8, 0.01, 1),
-                  functools.partial(np.random.normal, 0.5, 0.01, 1),
-                  functools.partial(np.random.normal, 0.6, 0.01, 1),
-                  functools.partial(np.random.normal, 0.2, 0.01, 1),
-                  functools.partial(np.random.normal, 0.4, 0.01, 1),
-                  functools.partial(np.random.normal, 0.9, 0.01, 1),
-                  functools.partial(np.random.normal, 0.7, 0.01, 1)]
+        r_dist = [functools.partial(np.random.normal, 0.1, 0.1, 1),
+                  functools.partial(np.random.normal, 0.7, 0.1, 1),
+                  functools.partial(np.random.normal, 0.3, 0.1, 1),
+                  functools.partial(np.random.normal, 0.8, 0.1, 1),
+                  functools.partial(np.random.normal, 0.5, 0.1, 1),
+                  functools.partial(np.random.normal, 0.6, 0.1, 1),
+                  functools.partial(np.random.normal, 0.2, 0.1, 1),
+                  functools.partial(np.random.normal, 0.4, 0.1, 1),
+                  functools.partial(np.random.normal, 0.9, 0.1, 1),
+                  functools.partial(np.random.normal, 0.99, 0.1, 1)]
 
-        self.means = [0.1, 0.99, 0.3, 0.8, 0.5, 0.6, 0.2, 0.4, 0.9, 0.7]
+        self.means = [0.1, 0.7, 0.3, 0.8, 0.5, 0.6, 0.2, 0.4, 0.9, 0.99]
 
-        d_dist = [functools.partial(np.random.poisson, 8, 1),
-                  functools.partial(np.random.poisson, 3, 1),
-                  functools.partial(np.random.poisson, 4, 1),
-                  functools.partial(np.random.poisson, 7, 1),
-                  functools.partial(np.random.poisson, 2, 1),
-                  functools.partial(np.random.poisson, 1, 1),
-                  functools.partial(np.random.poisson, 7, 1),
-                  functools.partial(np.random.poisson, 9, 1),
-                  functools.partial(np.random.poisson, 2, 1),
-                  functools.partial(np.random.poisson, 5, 1)]
+        d_dist = [functools.partial(np.random.normal, 8, 1, 1),
+                  functools.partial(np.random.normal, 3, 1, 1),
+                  functools.partial(np.random.normal, 4, 1, 1),
+                  functools.partial(np.random.normal, 7, 1, 1),
+                  functools.partial(np.random.normal, 2, 1, 1),
+                  functools.partial(np.random.normal, 1, 1, 1),
+                  functools.partial(np.random.normal, 7, 1, 1),
+                  functools.partial(np.random.normal, 9, 1, 1),
+                  functools.partial(np.random.normal, 2, 1, 1),
+                  functools.partial(np.random.normal, 5, 1, 1)]
 
         c = list(zip(r_dist, self.means, d_dist))
 
