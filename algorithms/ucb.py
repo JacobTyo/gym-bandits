@@ -35,4 +35,6 @@ class Ucb():
 
         self.last_action = action
         self.t += 1
+        # print("Iteration: {} \t ucb says: {}".format(self.t, action))
+        # print(self.means)
         return action

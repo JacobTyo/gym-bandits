@@ -80,9 +80,6 @@ def run(args, alg):
 
 def main():
 
-    np.random.seed(1)
-    random.seed(1)
-
     parser = argparse.ArgumentParser(description='DAAF bandits experiment')
     parser.add_argument('--horizon', type=int, help='length of experiment')
     parser.add_argument('--repetitions', type=int, help='Number of times to run experiment')
@@ -118,8 +115,9 @@ def main():
 
     pool = Pool(4)
 
-    # algs = ["random_actions", "ucb", "delayed_ucb", "odaaf_ed", "hedger", "hedger_phased"]  # "odaaf_ebd", "odaaf_bdev",
-    algs = ["random_actions", "hedger_phased"]
+    algs = ["random_actions", "delayed_ucb", "odaaf_ed", "odaaf_ebd", "odaaf_bdev", "hedger_phased"]
+    # "odaaf_ebd", "odaaf_bdev",
+    # algs = ["odaaf_ed"]  # , "hedger_phased"]  # , "hedger_phased"]
     output = pool.map(functools.partial(run, (args)), algs)
 
     # output = {}
