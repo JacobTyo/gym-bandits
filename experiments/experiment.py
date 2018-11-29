@@ -7,7 +7,7 @@ import argparse
 from multiprocessing import Pool
 from algorithms.ucb import Ucb
 from algorithms.delayed_ucb import Delayed_Ucb
-from algorithms import ODAAF, Hedger, phased_hedger, random_actions
+from algorithms import ODAAF, Hedger, phased_hedger, random_actions, phased_ucb
 import functools
 import random
 
@@ -26,6 +26,8 @@ def run(args, alg):
         agent = None
         if alg == "ucb":
             agent = Ucb(env.action_space.n, args)
+        elif alg == "phased_ucb":
+            agent = phased_ucb.PhasedUcb(env.action_space.n, args)
         elif alg == "delayed_ucb":
             agent = Delayed_Ucb(env.action_space.n, args)
         elif alg == "odaaf_ed":
@@ -84,9 +86,9 @@ def main():
     parser.add_argument('--horizon', type=int, help='length of experiment')
     parser.add_argument('--repetitions', type=int, help='Number of times to run experiment')
     # parser.add_argument('--ucb_delta', type=float, help='ucb error probability', default=0.01)
-    parser.add_argument('--bridge_period', type=int, help='ucb error probability', default=10)
+    parser.add_argument('--bridge_period', type=int, help='ucb error probability', default=15)
     parser.add_argument('--expected_delay', type=int, help='ucb error probability', default=9)
-    parser.add_argument('--delay_upper_bound', type=int, help='ucb error probability', default=10)
+    parser.add_argument('--delay_upper_bound', type=int, help='ucb error probability', default=20)
     parser.add_argument('--expected_variance', type=int, help='ucb error probability', default=9)
     parser.add_argument('--tolerance', type=float, help='ucb error probability', default=0.5)
 
@@ -113,11 +115,12 @@ def main():
     args = parser.parse_args()
     horizon = args.horizon
 
-    pool = Pool(4)
+    pool = Pool(5)
 
-    algs = ["random_actions", "delayed_ucb", "odaaf_ed", "odaaf_ebd", "odaaf_bdev", "hedger_phased"]
+    # algs = ["random_actions", "delayed_ucb", "odaaf_ed", "odaaf_ebd", "odaaf_bdev", "hedger_phased"]
     # "odaaf_ebd", "odaaf_bdev",
-    # algs = ["odaaf_ed"]  # , "hedger_phased"]  # , "hedger_phased"]
+    algs = ["phased_ucb", "delayed_ucb", "odaaf_ed", "hedger_phased", "ucb"]  # , "hedger_phased"]  # , "hedger_phased"]
+    # algs = ["hedger_phased"]
     output = pool.map(functools.partial(run, (args)), algs)
 
     # output = {}

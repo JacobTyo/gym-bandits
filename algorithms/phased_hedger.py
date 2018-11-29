@@ -56,7 +56,6 @@ class PhasedHedger:
                                                       self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
                                                       6 * self.tolerance * (
                                                           self.phase_count) * self.expected_delay)) ** 2
-        print("nm: {}".format(int(nm)))
         return int(nm)
 
     def set_little_nm(self):
@@ -73,7 +72,6 @@ class PhasedHedger:
         #     return int(-self.nm / 2)
         #
         # print("little_nm: {}".format(self.nm - int(term5)))
-        print("little_nm: {}".format(int(self.nm/2)))
         return int(self.nm/1.5)
 
     def play(self, reward, **kwargs):
@@ -88,9 +86,9 @@ class PhasedHedger:
         if sum(self.is_arm_eliminated) >= 7:
             if self.best_arm_found:
                 self.best_arm_found = False
-                print("Best arm found")
-                print(self.is_arm_eliminated)
-                print(self.estimated_arm_averages)
+                # print("Best arm found")
+                # print(self.is_arm_eliminated)
+                # print(self.estimated_arm_averages)
             self.selected_arm = self.get_best_arm()
             self.iteration += 1
             return self.selected_arm
