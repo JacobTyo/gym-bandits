@@ -30,9 +30,9 @@ class AnonymousDelayedBanditEnv(gym.Env):
         if len(p_dist) != len(r_dist):
             raise ValueError("Probability and Reward distribution must be the same length")
 
-        self.types = { "p_dist" : float,
-                       "r_dist" : float,
-                       "d_dist" : float}
+        self.types = { "p_dist": float,
+                       "r_dist": float,
+                       "d_dist": float}
 
         self.p_dist = p_dist
         self.r_dist = r_dist
@@ -280,29 +280,31 @@ class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
         p_dist = [1 for i in range(bandits)]
 
-        r_dist = [functools.partial(np.random.normal, 0.1, 0.1, 1),
-                  functools.partial(np.random.normal, 0.7, 0.1, 1),
-                  functools.partial(np.random.normal, 0.3, 0.1, 1),
-                  functools.partial(np.random.normal, 0.8, 0.1, 1),
-                  functools.partial(np.random.normal, 0.5, 0.1, 1),
-                  functools.partial(np.random.normal, 0.6, 0.1, 1),
-                  functools.partial(np.random.normal, 0.2, 0.1, 1),
-                  functools.partial(np.random.normal, 0.4, 0.1, 1),
-                  functools.partial(np.random.normal, 0.9, 0.1, 1),
-                  functools.partial(np.random.normal, 0.99, 0.1, 1)]
+        r_dist = [functools.partial(np.random.normal, 0.1, 0.01, 1),
+                  functools.partial(np.random.normal, 0.7, 0.01, 1),
+                  functools.partial(np.random.normal, 0.3, 0.01, 1),
+                  functools.partial(np.random.normal, 0.8, 0.01, 1),
+                  functools.partial(np.random.normal, 0.5, 0.01, 1),
+                  functools.partial(np.random.normal, 0.6, 0.01, 1),
+                  functools.partial(np.random.normal, 0.2, 0.01, 1),
+                  functools.partial(np.random.normal, 0.4, 0.01, 1),
+                  functools.partial(np.random.normal, 0.99, 0.01, 1),
+                  functools.partial(np.random.normal, 0.9, 0.01, 1)]
 
-        self.means = [0.1, 0.7, 0.3, 0.8, 0.5, 0.6, 0.2, 0.4, 0.9, 0.99]
+        self.means = [0.1, 0.7, 0.3, 0.8, 0.5, 0.6, 0.2, 0.4, 0.99, 0.9]
 
-        d_dist = [functools.partial(np.random.normal, 8, 1, 1),
-                  functools.partial(np.random.normal, 3, 1, 1),
-                  functools.partial(np.random.normal, 4, 1, 1),
-                  functools.partial(np.random.normal, 7, 1, 1),
-                  functools.partial(np.random.normal, 2, 1, 1),
-                  functools.partial(np.random.normal, 1, 1, 1),
-                  functools.partial(np.random.normal, 7, 1, 1),
-                  functools.partial(np.random.normal, 9, 1, 1),
-                  functools.partial(np.random.normal, 2, 1, 1),
-                  functools.partial(np.random.normal, 5, 1, 1)]
+        d_dist = [functools.partial(np.random.normal, 800, 100, 1),
+                  functools.partial(np.random.normal, 300, 100, 1),
+                  functools.partial(np.random.normal, 400, 100, 1),
+                  functools.partial(np.random.normal, 700, 100, 1),
+                  functools.partial(np.random.normal, 200, 100, 1),
+                  functools.partial(np.random.normal, 100, 100, 1),
+                  functools.partial(np.random.normal, 700, 100, 1),
+                  functools.partial(np.random.normal, 900, 100, 1),
+                  functools.partial(np.random.normal, 200, 100, 1),
+                  functools.partial(np.random.normal, 500, 100, 1)]
+
+        # d_dist = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
         c = list(zip(r_dist, self.means, d_dist))
 
@@ -367,33 +369,34 @@ class AdaBanditsOutliers(AnonymousDelayedBanditEnv):
 
         self.means = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 0.99]
 
-        d_dist = [functools.partial(np.random.poisson, 8, 1),
-                  functools.partial(np.random.poisson, 3, 1),
-                  functools.partial(np.random.poisson, 4, 1),
-                  functools.partial(np.random.poisson, 7, 1),
-                  functools.partial(np.random.poisson, 2, 1),
-                  functools.partial(np.random.poisson, 1, 1),
-                  functools.partial(np.random.poisson, 7, 1),
-                  functools.partial(np.random.poisson, 9, 1),
-                  functools.partial(np.random.poisson, 25, 1),  # This is the outlier
-                  functools.partial(np.random.poisson, 5, 1)]
+        d_dist = [functools.partial(np.random.normal, 8, 1, 1),
+                  functools.partial(np.random.normal, 3, 1, 1),
+                  functools.partial(np.random.normal, 4, 1, 1),
+                  functools.partial(np.random.normal, 7, 1, 1),
+                  functools.partial(np.random.normal, 2, 1, 1),
+                  functools.partial(np.random.normal, 1, 1, 1),
+                  functools.partial(np.random.normal, 7, 1, 1),
+                  functools.partial(np.random.normal, 9, 1, 1),
+                  functools.partial(np.random.normal, 6, 1, 1),
+                  functools.partial(np.random.normal, 5, 1, 1)]
 
-        c = list(zip(r_dist, self.means, d_dist))
-
-        random.shuffle(c)
-
-        r_dist, self.means, d_dist = zip(*c)
+        # c = list(zip(r_dist, self.means, d_dist))
+        #
+        # random.shuffle(c)
+        #
+        # r_dist, self.means, d_dist = zip(*c)
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
+
 
 class AdaBanditsBaselineTrunc(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
         p_dist = [1 for i in range(bandits)]
-        v =0.1
+        v = 0.1
         trunc_stds = 2
         self.means = np.linspace(trunc_stds * v, 1 - (trunc_stds * v), num=bandits)
         r_dist = [functools.partial(truncnorm.rvs, -trunc_stds, trunc_stds, loc=m, scale=v) for m in self.means]
-        d_dist = [functools.partial(np.random.poisson, l, 1) for l in np.arange(1, bandits+1)]
+        d_dist = [functools.partial(np.random.poisson, l*10, 1) for l in np.arange(1, bandits+1)]
 
         random.shuffle(d_dist)
         c = list(zip(r_dist, self.means, d_dist))

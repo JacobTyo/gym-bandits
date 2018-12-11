@@ -36,14 +36,14 @@ class Hedger:
                                               np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
                                                       self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
                                                       6 * self.tolerance * (
-                                                                  self.phase_count) * self.expected_delay)) ** 2
+                                                          self.phase_count) * self.expected_delay)) ** 2
         self.phase_count += 1
         return int(nm)
 
     def set_little_nm(self):
         term2 = np.sqrt(2 * np.log(self.horizon * (self.tolerance ** 2)) + (8.0 / 3.0) *
-                                                      self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
-                                                      6 * self.tolerance * (self.phase_count + 1) * self.expected_delay)
+                        self.tolerance * np.log(self.horizon * (self.tolerance ** 2)) +
+                        6 * self.tolerance * (self.phase_count + 1) * self.expected_delay)
         term5 = (1.0 / (self.tolerance ** 2)) * term2 ** 2
 
         return self.nm - int(term5)
