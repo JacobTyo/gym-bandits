@@ -150,7 +150,7 @@ class Odaaf:
             self.last_arm_pulled = self.best_arm
             self.last_arm_pulls = 0
             self.phase_iteration_num = 0
-            self.phase1_pull_results = [[] for _ in range(self.num_arms)]
+            # self.phase1_pull_results = [[] for _ in range(self.num_arms)]
             self.tolerance = self.tolerance / 2
             self.num_required_pulls_phase1 = self.setnm()
             self.startingStep2NewPhase = True

@@ -118,8 +118,7 @@ def main():
 
     pool = Pool(4)
 
-    # algs = ["random_actions", "ucb", "delayed_ucb", "odaaf_ed", "hedger", "hedger_phased"]  # "odaaf_ebd", "odaaf_bdev",
-    algs = ["random_actions", "hedger_phased"]
+    algs = ["random_actions", "ucb", "delayed_ucb", "odaaf_ed", "hedger_phased"]  # "odaaf_ebd", "odaaf_bdev",
     output = pool.map(functools.partial(run, (args)), algs)
 
     # output = {}

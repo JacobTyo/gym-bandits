@@ -81,9 +81,9 @@ class PhasedHedger:
         if sum(self.is_arm_eliminated) >= 7:
             if self.best_arm_found:
                 self.best_arm_found = False
-                print("Best arm found")
-                print(self.is_arm_eliminated)
-                print(self.previous_arm_averages)
+                # print("Best arm found")
+                # print(self.is_arm_eliminated)
+                # print(self.previous_arm_averages)
             self.selected_arm = [i for i in range(len(self.is_arm_eliminated)) if not self.is_arm_eliminated[i]][0]
             return self.selected_arm
 
