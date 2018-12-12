@@ -26,7 +26,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
         deterministic delays, whereas a list of functions corresponds to distributions for the delays to be sampled
         from.  Note that this should numbers or a distribution bounded by [0, horizon]
     """
-    def __init__(self, p_dist, r_dist, d_dist, horizon=5000, max_delay=None):
+    def __init__(self, p_dist, r_dist, d_dist, horizon=5000, max_delay=np.inf):
         if len(p_dist) != len(r_dist):
             raise ValueError("Probability and Reward distribution must be the same length")
 
@@ -92,7 +92,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
                 reward_from_this_pull = reward_from_this_pull[0]
 
             # and what delay is associated with that reward?
-            while delay_this_pull is None or delay_this_pull > self.max_delay:
+            while (delay_this_pull is None or delay_this_pull > self.max_delay):
                 if self.types["d_dist"] == FunctionType:
                     delay_this_pull = self.d_dist[arm]()
                 else:

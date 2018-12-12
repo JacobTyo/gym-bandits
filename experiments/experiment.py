@@ -10,6 +10,8 @@ from algorithms.delayed_ucb import Delayed_Ucb
 from algorithms import ODAAF, Hedger, phased_hedger, random_actions, phased_ucb
 import functools
 import random
+import os
+import pickle
 
 
 def run(args, alg):
@@ -91,6 +93,7 @@ def main():
     parser.add_argument('--delay_upper_bound', type=int, help='ucb error probability', default=20)
     parser.add_argument('--expected_variance', type=int, help='ucb error probability', default=9)
     parser.add_argument('--tolerance', type=float, help='ucb error probability', default=0.5)
+    parser.add_argument('--save_name', type=str, help='file name to save results', default="")
 
     # parser.add_argument('--alg', type=str, choices=["ucb", "delayed_ucb"], help='bandit algorithm to run')
     parser.add_argument('--gym', type=str, choices=['BanditTenArmedRandomFixed',
@@ -136,20 +139,29 @@ def main():
     max_mean = tempenv.step(0)[-1]["optimal_mean"]
     # Results
 
+    cumregret = {}
     plt.figure(figsize=(15, 7.5))
-    for alg in algs: 
+    for alg in algs:
         mean = results[alg]["mean"]
         std = results[alg]["std"]
         total_regret = (max_mean * horizon) - np.sum(mean)
         print("{} mean regret per step: {}".format(alg, total_regret / horizon))
-        cumregret = np.cumsum(max_mean - mean)
-        plt.semilogy(cumregret, label=alg)
-        plt.fill_between(np.arange(horizon), cumregret - std, cumregret + std, alpha=0.5)
+        cumregret[alg] = np.cumsum(max_mean - mean)
+        plt.semilogy(cumregret[alg], label=alg)
+        # plt.fill_between(np.arange(horizon), cumregret - std, cumregret + std, alpha=0.5)
 
     plt.xlabel("Step")
     plt.ylabel("Cumulative Regret")
     plt.yscale("linear")
     plt.legend(loc='upper left')
+
+    if args.save_name:
+        if not os.path.isdir("../results"):
+            os.mkdir("../results")
+        with open("../results/" + args.save_name + '.pickle', 'wb') as handle:
+            pickle.dump(cumregret, handle)
+        plt.savefig("../results/" + args.save_name + '.png')
+
     plt.show()
     # plot rewards
     # plt.plot(rewards, label=args.alg)
@@ -158,6 +170,7 @@ def main():
     # plt.ylabel("reward")
     # plt.show()
     # plt.figure()
+
 
 
 if __name__ == "__main__":
