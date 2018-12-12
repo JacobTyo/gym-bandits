@@ -422,7 +422,7 @@ class AdaBanditsOutliers(AnonymousDelayedBanditEnv):
 
         r_dist, self.means, d_dist = zip(*c)
 
-        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist, max_delay=500)
 
 class AdaBanditsOptimalOutlier(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
@@ -452,7 +452,7 @@ class AdaBanditsOptimalOutlier(AnonymousDelayedBanditEnv):
 
         r_dist, self.means, d_dist = zip(*c)
 
-        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist, max_delay=500)
 
 class AdaBanditsBaselineTrunc(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
