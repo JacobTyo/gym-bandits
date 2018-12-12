@@ -282,37 +282,38 @@ class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
         p_dist = [1 for i in range(bandits)]
 
-        r_dist = [functools.partial(np.random.normal, 0.1, 0.01, 1),
-                  functools.partial(np.random.normal, 0.7, 0.01, 1),
-                  functools.partial(np.random.normal, 0.3, 0.01, 1),
-                  functools.partial(np.random.normal, 0.8, 0.01, 1),
-                  functools.partial(np.random.normal, 0.5, 0.01, 1),
-                  functools.partial(np.random.normal, 0.6, 0.01, 1),
-                  functools.partial(np.random.normal, 0.2, 0.01, 1),
-                  functools.partial(np.random.normal, 0.4, 0.01, 1),
-                  functools.partial(np.random.normal, 0.99, 0.01, 1),
-                  functools.partial(np.random.normal, 0.9, 0.01, 1)]
+        r_dist = [functools.partial(truncnorm.rvs, 0, 1, loc=.01, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.1, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.2, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.3, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.4, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.5, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.6, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.7, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.8, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.9, scale=.01)]
 
-        self.means = [0.1, 0.7, 0.3, 0.8, 0.5, 0.6, 0.2, 0.4, 0.99, 0.9]
+        self.means = [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-        d_dist = [functools.partial(np.random.normal, 800, 100, 1),
-                  functools.partial(np.random.normal, 300, 100, 1),
-                  functools.partial(np.random.normal, 400, 100, 1),
-                  functools.partial(np.random.normal, 700, 100, 1),
-                  functools.partial(np.random.normal, 200, 100, 1),
-                  functools.partial(np.random.normal, 100, 100, 1),
-                  functools.partial(np.random.normal, 700, 100, 1),
-                  functools.partial(np.random.normal, 900, 100, 1),
-                  functools.partial(np.random.normal, 200, 100, 1),
-                  functools.partial(np.random.normal, 500, 100, 1)]
+        d_dist = [functools.partial(np.random.poisson, 100, size=1),
+                  functools.partial(np.random.poisson, 200, size=1),
+                  functools.partial(np.random.poisson, 300, size=1),
+                  functools.partial(np.random.poisson, 400, size=1),
+                  functools.partial(np.random.poisson, 500, size=1),
+                  functools.partial(np.random.poisson, 600, size=1),
+                  functools.partial(np.random.poisson, 700, size=1),
+                  functools.partial(np.random.poisson, 800, size=1),
+                  functools.partial(np.random.poisson, 800, size=1),
+                  functools.partial(np.random.poisson, 900, size=1),
+                  functools.partial(np.random.poisson, 1000, size=1)]
 
         # d_dist = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-        c = list(zip(r_dist, self.means, d_dist))
-
-        random.shuffle(c)
-
-        r_dist, self.means, d_dist = zip(*c)
+        # c = list(zip(r_dist, self.means, d_dist))
+        #
+        # random.shuffle(c)
+        #
+        # r_dist, self.means, d_dist = zip(*c)
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
 
@@ -360,16 +361,16 @@ class AdaBanditsBaseline_Optimistic(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
         p_dist = [1 for i in range(bandits)]
 
-        r_dist = [functools.partial(np.random.normal, 0.1, 0.01, 1),
-                  functools.partial(np.random.normal, .99, 0.01, 1),
-                  functools.partial(np.random.normal, 0.3, 0.01, 1),
-                  functools.partial(np.random.normal, 0.8, 0.01, 1),
-                  functools.partial(np.random.normal, 0.5, 0.01, 1),
-                  functools.partial(np.random.normal, 0.6, 0.01, 1),
-                  functools.partial(np.random.normal, 0.2, 0.01, 1),
-                  functools.partial(np.random.normal, 0.4, 0.01, 1),
-                  functools.partial(np.random.normal, 0.9, 0.01, 1),
-                  functools.partial(np.random.normal, 0.7, 0.01, 1)]
+        r_dist = [functools.partial(truncnorm.rvs, 0, 1, loc=.01, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.1, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.2, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.3, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.4, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.5, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.6, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.7, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.8, scale=.01),
+                  functools.partial(truncnorm.rvs, 0, 1, loc=.9, scale=.01)]
 
         self.means = [0.1, 0.99, 0.3, 0.8, 0.5, 0.6, 0.2, 0.4, 0.9, 0.7]
 
@@ -437,7 +438,7 @@ class AdaBanditsBaselineTrunc(AnonymousDelayedBanditEnv):
         trunc_stds = 2
         self.means = np.linspace(trunc_stds * v, 1 - (trunc_stds * v), num=bandits)
         r_dist = [functools.partial(truncnorm.rvs, -trunc_stds, trunc_stds, loc=m, scale=v) for m in self.means]
-        d_dist = [functools.partial(np.random.poisson, l*10, 1) for l in np.arange(1, bandits+1)]
+        d_dist = [functools.partial(np.random.poisson, l, 1) for l in np.arange(1, bandits+1)]
 
         random.shuffle(d_dist)
         c = list(zip(r_dist, self.means, d_dist))

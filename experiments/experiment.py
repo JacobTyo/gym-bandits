@@ -88,10 +88,10 @@ def main():
     parser.add_argument('--horizon', type=int, help='length of experiment')
     parser.add_argument('--repetitions', type=int, help='Number of times to run experiment')
     # parser.add_argument('--ucb_delta', type=float, help='ucb error probability', default=0.01)
-    parser.add_argument('--bridge_period', type=int, help='ucb error probability', default=15)
-    parser.add_argument('--expected_delay', type=int, help='ucb error probability', default=9)
-    parser.add_argument('--delay_upper_bound', type=int, help='ucb error probability', default=20)
-    parser.add_argument('--expected_variance', type=int, help='ucb error probability', default=9)
+    parser.add_argument('--bridge_period', type=int, help='ucb error probability', default=1500)
+    parser.add_argument('--expected_delay', type=int, help='ucb error probability', default=1000)
+    parser.add_argument('--delay_upper_bound', type=int, help='ucb error probability', default=2000)
+    parser.add_argument('--expected_variance', type=int, help='ucb error probability', default=1000)
     parser.add_argument('--tolerance', type=float, help='ucb error probability', default=0.5)
     parser.add_argument('--save_name', type=str, help='file name to save results', default="")
 
@@ -119,7 +119,7 @@ def main():
     args = parser.parse_args()
     horizon = args.horizon
 
-    pool = Pool(5)
+    pool = Pool(4)
 
     algs = ["phased_ucb", "delayed_ucb", "odaaf_ed", "odaaf_ebd", "odaaf_bdev", "hedger_phased", "ucb"]
     output = pool.map(functools.partial(run, (args)), algs)
