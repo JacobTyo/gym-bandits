@@ -424,6 +424,35 @@ class AdaBanditsOutliers(AnonymousDelayedBanditEnv):
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
 
+class AdaBanditsOptimalOutlier(AnonymousDelayedBanditEnv):
+    def __init__(self, bandits=10):
+        p_dist = [1 for i in range(bandits)]
+
+        self.means = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+        d_dist = [functools.partial(np.random.poisson, 1, 1),
+                  functools.partial(np.random.poisson, 2, 1),
+                  functools.partial(np.random.poisson, 3, 1),
+                  functools.partial(np.random.poisson, 4, 1),
+                  functools.partial(np.random.poisson, 5, 1),
+                  functools.partial(np.random.poisson, 6, 1),
+                  functools.partial(np.random.poisson, 7, 1),
+                  functools.partial(np.random.poisson, 8, 1),
+                  functools.partial(np.random.poisson, 9, 1),
+                  functools.partial(np.random.poisson, 100, 1)]
+
+        random.shuffle(self.means)
+        self.means.append(1.0)
+
+        r_dist = [functools.partial(np.random.normal, mean, 1, 1) for mean in self.means]
+
+        c = list(zip(r_dist, self.means, d_dist))
+
+        random.shuffle(c)
+
+        r_dist, self.means, d_dist = zip(*c)
+
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
 
 class AdaBanditsBaselineTrunc(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):

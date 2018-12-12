@@ -113,6 +113,7 @@ def main():
                                                     'AnonymousDelayedBanditTenArmedStochasticDelayStochasticReward2',
                                                     'AdaBanditsBaseline',
                                                     'AdaBanditsOutliers',
+                                                    'AdaBanditsOptimalOutlier',
                                                     'AdaBanditsBaseline_Optimistic',
                                                     'AdaBanditsBaselineTrunc',
                                                     'AdaBanditsLong'], help='bandit environment')
