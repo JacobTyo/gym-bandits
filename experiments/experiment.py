@@ -94,6 +94,7 @@ def main():
     parser.add_argument('--expected_variance', type=int, help='ucb error probability', default=1000)
     parser.add_argument('--tolerance', type=float, help='ucb error probability', default=0.5)
     parser.add_argument('--save_name', type=str, help='file name to save results', default="")
+    parser.add_argument('--threads', type=int, help='number of parallel threads', default=1)
 
     # parser.add_argument('--alg', type=str, choices=["ucb", "delayed_ucb"], help='bandit algorithm to run')
     parser.add_argument('--gym', type=str, choices=['BanditTenArmedRandomFixed',
@@ -120,7 +121,7 @@ def main():
     args = parser.parse_args()
     horizon = args.horizon
 
-    pool = Pool(4)
+    pool = Pool(args.threads)
 
     algs = ["phased_ucb", "delayed_ucb", "odaaf_ed", "odaaf_ebd", "odaaf_bdev", "hedger_phased", "ucb"]
     output = pool.map(functools.partial(run, (args)), algs)
