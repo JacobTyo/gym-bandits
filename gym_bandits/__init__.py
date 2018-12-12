@@ -19,6 +19,7 @@ from .anonymous_delayed_bandit import AdaBanditsBaseline
 from .anonymous_delayed_bandit import AdaBanditsBaseline_Optimistic
 from .anonymous_delayed_bandit import AdaBanditsOutliers
 from .anonymous_delayed_bandit import AdaBanditsBaselineTrunc
+from .anonymous_delayed_bandit import AdaBanditsLong
 
 
 environments = [['BanditTenArmedRandomFixed', 'v0'],
@@ -39,6 +40,7 @@ environments = [['BanditTenArmedRandomFixed', 'v0'],
                 ['AdaBanditsBaseline', 'v0'],
                 ['AdaBanditsBaseline_Optimistic', 'v0'],
                 ['AdaBanditsOutliers', 'v0'],
+                ['AdaBanditsLong', 'v0'],
                 ['AdaBanditsBaselineTrunc', 'v0']]
 
 

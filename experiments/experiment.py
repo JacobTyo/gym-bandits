@@ -111,16 +111,14 @@ def main():
                                                     'AdaBanditsBaseline',
                                                     'AdaBanditsOutliers',
                                                     'AdaBanditsBaseline_Optimistic',
-                                                    'AdaBanditsBaselineTrunc'], help='bandit environment')
+                                                    'AdaBanditsBaselineTrunc',
+                                                    'AdaBanditsLong'], help='bandit environment')
     args = parser.parse_args()
     horizon = args.horizon
 
     pool = Pool(5)
 
-    # algs = ["random_actions", "delayed_ucb", "odaaf_ed", "odaaf_ebd", "odaaf_bdev", "hedger_phased"]
-    # "odaaf_ebd", "odaaf_bdev",
-    algs = ["phased_ucb", "delayed_ucb", "odaaf_ed", "hedger_phased", "ucb"]  # , "hedger_phased"]  # , "hedger_phased"]
-    # algs = ["hedger_phased"]
+    algs = ["phased_ucb", "delayed_ucb", "odaaf_ed", "odaaf_ebd", "odaaf_bdev", "hedger_phased", "ucb"]
     output = pool.map(functools.partial(run, (args)), algs)
 
     # output = {}
@@ -139,7 +137,7 @@ def main():
     # Results
 
     plt.figure(figsize=(15, 7.5))
-    for alg in algs:  # + ["odaaf_ed", "odaaf_ebd", "odaaf_bdev"]:
+    for alg in algs: 
         mean = results[alg]["mean"]
         std = results[alg]["std"]
         total_regret = (max_mean * horizon) - np.sum(mean)

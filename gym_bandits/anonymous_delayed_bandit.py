@@ -26,7 +26,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
         deterministic delays, whereas a list of functions corresponds to distributions for the delays to be sampled
         from.  Note that this should numbers or a distribution bounded by [0, horizon]
     """
-    def __init__(self, p_dist, r_dist, d_dist, horizon=5000):
+    def __init__(self, p_dist, r_dist, d_dist, horizon=5000, max_delay=None):
         if len(p_dist) != len(r_dist):
             raise ValueError("Probability and Reward distribution must be the same length")
 
@@ -43,6 +43,7 @@ class AnonymousDelayedBanditEnv(gym.Env):
         self.done = False
 
         self.horizon = horizon
+        self.max_delay = max_delay
         self.reward = [0 for i in range(self.horizon)]
         self.non_anon_reward = [[] for i in range(self.horizon + 1)]
         self.history = {'arm': [],
@@ -91,10 +92,11 @@ class AnonymousDelayedBanditEnv(gym.Env):
                 reward_from_this_pull = reward_from_this_pull[0]
 
             # and what delay is associated with that reward?
-            if self.types["d_dist"] == FunctionType:
-                delay_this_pull = self.d_dist[arm]()
-            else:
-                delay_this_pull = self.d_dist[arm]
+            while delay_this_pull is None or delay_this_pull > self.max_delay:
+                if self.types["d_dist"] == FunctionType:
+                    delay_this_pull = self.d_dist[arm]()
+                else:
+                    delay_this_pull = self.d_dist[arm]
 
         # ensure that delay is non-negative int (it is an index)
         delay_this_pull = int(delay_this_pull) if int(delay_this_pull) >= 0 else 0
@@ -314,6 +316,45 @@ class AdaBanditsBaseline(AnonymousDelayedBanditEnv):
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
 
+class AdaBanditsLong(AnonymousDelayedBanditEnv):
+    def __init__(self, bandits=10):
+        p_dist = [1 for i in range(bandits)]
+
+        r_dist = [functools.partial(np.random.normal, 0.1, 0.1, 1),
+                  functools.partial(np.random.normal, 0.7, 0.1, 1),
+                  functools.partial(np.random.normal, 0.3, 0.1, 1),
+                  functools.partial(np.random.normal, 0.8, 0.1, 1),
+                  functools.partial(np.random.normal, 0.5, 0.1, 1),
+                  functools.partial(np.random.normal, 0.6, 0.1, 1),
+                  functools.partial(np.random.normal, 0.2, 0.1, 1),
+                  functools.partial(np.random.normal, 0.4, 0.1, 1),
+                  functools.partial(np.random.normal, 1.0, 0.1, 1),
+                  functools.partial(np.random.normal, 0.9, 0.1, 1)]
+
+        self.means = [0.1, 0.7, 0.3, 0.8, 0.5, 0.6, 0.2, 0.4, 1.0, 0.9]
+
+
+        d_dist = [functools.partial(np.random.poisson, 800, 1),
+                  functools.partial(np.random.poisson, 300, 1),
+                  functools.partial(np.random.poisson, 400, 1),
+                  functools.partial(np.random.poisson, 700, 1),
+                  functools.partial(np.random.poisson, 200, 1),
+                  functools.partial(np.random.poisson, 100, 1),
+                  functools.partial(np.random.poisson, 1000, 1),
+                  functools.partial(np.random.poisson, 900, 1),
+                  functools.partial(np.random.poisson, 200, 1),
+                  functools.partial(np.random.poisson, 500, 1)]
+
+        random.shuffle(d_dist)
+
+        c = list(zip(r_dist, self.means, d_dist))
+
+        random.shuffle(c)
+
+        r_dist, self.means, d_dist = zip(*c)
+
+        AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist, max_delay=5000)
+
 
 class AdaBanditsBaseline_Optimistic(AnonymousDelayedBanditEnv):
     def __init__(self, bandits=10):
@@ -343,11 +384,11 @@ class AdaBanditsBaseline_Optimistic(AnonymousDelayedBanditEnv):
                   functools.partial(np.random.poisson, 200, 1),
                   functools.partial(np.random.poisson, 500, 1)]
 
-        # c = list(zip(r_dist, self.means, d_dist))
-        #
-        # random.shuffle(c)
-        #
-        # r_dist, self.means, d_dist = zip(*c)
+        c = list(zip(r_dist, self.means, d_dist))
+
+        random.shuffle(c)
+
+        r_dist, self.means, d_dist = zip(*c)
 
         AnonymousDelayedBanditEnv.__init__(self, p_dist=p_dist, r_dist=r_dist, d_dist=d_dist)
 
