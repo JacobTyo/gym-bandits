@@ -140,7 +140,7 @@ def main():
     # Results
 
     cumregret = {}
-    plt.figure(figsize=(15, 7.5))
+    plt.figure(figsize=(12, 6))
     for alg in algs:
         mean = results[alg]["mean"]
         std = results[alg]["std"]
@@ -154,6 +154,7 @@ def main():
     plt.ylabel("Cumulative Regret")
     plt.yscale("linear")
     plt.legend(loc='upper left')
+    plt.rcParams.update({'font.size': 16})
 
     if args.save_name:
         if not os.path.isdir("../results"):
